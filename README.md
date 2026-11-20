@@ -206,9 +206,9 @@ GitHub Actions runs the test suite on Python 3.10, 3.11, and 3.12 for pushes and
 
 ## Release and PyPI publishing
 
-Pushing a version tag such as `v0.2.3` runs tests, builds the distributions, checks that the tag matches `pyproject.toml`, and publishes them to PyPI through GitHub Actions. The publisher uses PyPI Trusted Publishing (OIDC), so no PyPI API token is stored in GitHub.
+See [`CHANGELOG.md`](CHANGELOG.md) for release history. Pushing a version tag such as `v0.2.4` runs tests, builds the distributions, checks that the tag matches `pyproject.toml`, and publishes them to PyPI through GitHub Actions. The publisher uses PyPI Trusted Publishing (OIDC), so no PyPI API token is stored in GitHub.
 
-The first automatic publication is version `0.2.3`. A [pending PyPI Trusted Publisher](https://docs.pypi.org/trusted-publishers/creating-a-project-through-oidc/) must be configured with owner `gempurbayu`, repository `kairos`, workflow `publish.yml`, and environment `pypi`. The release tag must match the package version exactly.
+Version `0.2.3` was the first automatic publication. The [PyPI Trusted Publisher](https://docs.pypi.org/trusted-publishers/) is configured for owner `gempurbayu`, repository `kairos`, workflow `publish.yml`, and environment `pypi`. Every release tag must match the package version exactly.
 
 ## License
 
