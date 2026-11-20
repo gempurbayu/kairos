@@ -73,6 +73,8 @@ async function init(){
     const label=node('label',clip.title);label.htmlFor=check.id;
     top.append(check,label,node('span',`${clip.score.toFixed(0)} · ${clip.confidence}`,'badge'));card.append(top);
     const thumbs=node('div',undefined,'thumbs');(clip.thumbnails||[]).forEach((_,i)=>{const img=node('img');img.src=url(`/thumbnail/${encodeURIComponent(clip.id)}/${i}`);img.alt=`Preview frame ${i+1}`;img.loading='lazy';thumbs.append(img);});card.append(thumbs);
+    if(clip.content_mode) card.append(node('p',`Transcript content: ${clip.content_mode} · matched goal concepts: ${(clip.goal_matches||[]).join(', ')||'none'}`,'hint'));
+    if(clip.boundary) card.append(node('p',`Boundaries: ${clip.boundary.start_clean?'opening cue found':'opening needs review'} · ${clip.boundary.end_clean?'ending cue found':'ending needs review'}`,'hint'));
     const times=node('div',undefined,'times');['start','end'].forEach(key=>{const label=node('label',`${key==='start'?'Start':'End'} (seconds)`), input=node('input');input.type='number';input.step='0.1';input.min='0';input.max=String(plan.duration);input.value=clip[key];input.dataset.time=key;label.append(input);times.append(label);});card.append(times);
     const button=node('button','Preview range');button.type='button';button.onclick=()=>preview(card);card.append(button,node('p',clip.transcript,'transcript'),node('p',clip.reason,'reason'));
     if(clip.warnings?.length)card.append(node('p',clip.warnings.join(' · '),'reason'));

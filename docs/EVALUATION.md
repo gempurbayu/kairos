@@ -43,3 +43,9 @@ A five-minute authorized excerpt of a gaming livestream was transcribed locally 
 The sampled interval primarily contained live-chat discussion rather than gameplay. All five candidates had low confidence, no matched gaming keywords, and no matches for the supplied English editorial goal in the Indonesian transcript. This verifies the pipeline on real media but does not demonstrate gameplay-event detection or good editorial selection. Reference timestamps have not been annotated, so no precision/recall claim is made.
 
 Follow-up evaluation should cover actual gameplay intervals, goals in the transcript language, slang transcription accuracy, complete opening/ending context, and caption review. Do not infer segment content solely from the video title or category.
+
+## Editorial selector v2 smoke comparison
+
+Re-running the same cached transcript with the same English goal produced five candidates labeled as conversation, with mismatch warnings for the requested gaming mode. Common reaction concepts matched in all five, where literal matching previously yielded zero goal matches. This is evidence that bilingual concept matching and mismatch reporting execute; it is not a measured improvement in highlight quality. ASR wording errors and context dependence remain visible and still require manual review.
+
+Authored English/Indonesian regression examples test question/answer grouping, fragment merging, unpunctuated fallback, repetition/CTA suppression, mixed-content penalties, ambiguous workplace/game terms, and AI range alignment/deduplication. These synthetic expectations do not substitute for human annotations on varied real sources.

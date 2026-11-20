@@ -46,5 +46,5 @@ def test_cli_passes_platform_and_quality(monkeypatch,capsys):
     monkeypatch.setattr(cli,'process',lambda *args: calls.append(args) or {})
     monkeypatch.setattr('sys.argv',['kairos','video.mp4','--preset','tiktok','--resolution','720p','--layout','fit'])
     cli.main()
-    assert calls[0][-3:] == ('fit','720p','tiktok')
+    assert calls[0][-5:] == ('fit','720p','tiktok','auto','')
     assert json.loads(capsys.readouterr().out) == {}

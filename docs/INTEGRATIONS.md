@@ -198,19 +198,19 @@ For the first publication, configure a [pending publisher in PyPI](https://docs.
 - Workflow: `publish.yml`
 - GitHub environment: `pypi`
 
-For each release, update the project version, commit the change, create the matching tag (for example, `v0.2.4`), then push the commit and tag. Publishing starts after the release tests pass. Version `0.2.3` is the first release using this workflow.
+For each release, update the project version, commit the change, create the matching tag (for example, `v0.3.0`), then push the commit and tag. Publishing starts after the release tests pass. Version `0.2.3` is the first release using this workflow.
 
-## Candidate review workflow (v0.3 development)
+## Candidate review workflow (v0.3)
 
-Install the current checkout to use `discover_clip_candidates`; it is not part of the v0.2.4 package. Restart your MCP client after installing the updated checkout.
+Install Kairos 0.3 or newer to use `discover_clip_candidates`. Upgrade an existing installation and restart your MCP client to refresh its tool schemas.
 
 Ask your agent: "Find five useful teaching moments in `/absolute/path/video.mp4`, using instruction mode and offline selection. Show the timestamps, reasons, confidence, and thumbnails before rendering."
 
-The agent should call `discover_clip_candidates` with `path`, `mode: "instruction"`, `goal: "useful teaching moments"`, `count: 5`, and `use_ai: false`. Use `gaming` for experimental commentary/reaction analysis. `auto` chooses a mode from transcript keywords.
+The agent should call `discover_clip_candidates` with `path`, `mode: "instruction"`, `goal: "useful teaching moments"`, `count: 5`, and `use_ai: false`. Use `gaming` for experimental commentary/reaction analysis. `auto` classifies each candidate from transcript cues; unsupported content is labeled unknown. Inspect per-candidate mismatch and boundary warnings.
 
 After review, ask: "Render candidate_01 and candidate_03 from that plan." The agent calls `generate_clips` with the same local source, `candidate_plan` set to the returned `plan_path`, and `candidate_ids: ["candidate_01", "candidate_03"]`. The fingerprint must match the video and timestamps must be inside its duration. For an authorized YouTube URL, set `allow_download: true` explicitly. Discovery retains a local source beside the plan; use the returned local `source` for review and selected rendering.
 
-## Long-running work with background jobs (v0.3 development)
+## Long-running work with background jobs (v0.3)
 
 Use `start_clip_job(kind="discover", options={"source": "/absolute/video.mp4", "mode": "conversation", "use_ai": false})`, then poll `get_clip_job(job_id=...)`. Completed status includes the result object and its saved path. Set `include_result=false` to avoid returning the result repeatedly. For rendering, use `kind="render"` with `source`, `candidate_plan`, and `candidate_ids` in `options`. Job output directories are assigned automatically; an `output_dir` option is overridden to protect other jobs.
 
@@ -218,16 +218,22 @@ Use `cancel_clip_job` to request cancellation. Wait for `cancelled`, `failed`, o
 
 Transcript caching is shared by discovery, render, and transcription tools. Set `KAIROS_CACHE_DIR`, `KAIROS_DISABLE_CACHE`, or `KAIROS_JOBS_DIR` in the server's local environment if needed. Cache/result files can contain private transcript text and paths. They are local artifacts and should not be committed.
 
-## Review studio and layouts (v0.3 development)
+## Review studio and layouts (v0.3)
 
 To open a plan in the local review UI, run `kairos /local/video.mp4 --review --candidate-plan /path/to/candidates.json`. Keep the terminal open. The page edits timestamps, selects IDs, and starts render jobs with progress/cancel and output links. The server binds only to 127.0.0.1 and its session URL must remain private.
 
 Render tools and jobs accept `layout: "portrait"`, `"fit"`, or `"landscape"`. `fit` preserves the full frame with portrait padding; prefer it for gameplay, slides, and screen recordings. Portrait uses the existing `face_tracking` option. Other layouts disable face tracking. The UI's source preview does not simulate the final crop or burned captions.
 
-## Export presets and resolution (v0.3 development)
+## Export presets and resolution (v0.3)
 
 `generate_clips` and render job options accept `preset: "tiktok"`, `"reels"`, or `"shorts"`, and `resolution: "auto"`, `"720p"`, or `"1080p"`. Auto selects 1080 × 1920. The 720p vertical option is 720 × 1280. Presets share the same 9:16 geometry and do not enforce all upload requirements.
 
 Example render job options: `{"source":"/local/video.mp4","candidate_plan":"/path/candidates.json","candidate_ids":["candidate_01"],"preset":"reels","resolution":"720p","layout":"fit"}`. Use `portrait` to crop/follow faces or `fit` to preserve the full source. For custom landscape, omit the platform preset; 720p then means 1280 × 720 and 1080p means 1920 × 1080.
 
 These options are also available as dropdowns in the local review page. The manifest's `export` object records the actual target dimensions and encoding. Upscaling does not restore detail absent from the source.
+
+## Editorial selection in 0.3
+
+Discovery, direct rendering, and `find_highlights` share the same selection policy. Pass `mode` and `goal` to direct rendering and render jobs when not using a reviewed plan. Reviewed IDs and edited timestamps remain authoritative.
+
+Offline selection maps common English/Indonesian goal concepts through a small lexicon, groups ASR fragments at punctuation/pauses, penalizes repetition/CTA and content transitions, and reports `content_mode`, `classification_evidence`, `goal_matches`, `boundary`, and warnings per candidate. This is explainable heuristic matching, not arbitrary cross-language semantic comprehension. Gemini proposals are optionally used, validated, and snapped back to transcript windows; overlapping snapped proposals are deduplicated. A mode/goal unsupported by the content should not be presented as a detected event.

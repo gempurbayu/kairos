@@ -6,8 +6,8 @@ from pathlib import Path
 
 from mcp.server.fastmcp import FastMCP
 
-from .discovery import discover_candidates, validate_options
-from .pipeline import ai_highlights, fallback_highlights, process, transcribe
+from .discovery import discover_candidates, validate_options, select_editorial_highlights
+from .pipeline import process, transcribe
 
 
 mcp = FastMCP("kairos")
@@ -69,23 +69,18 @@ def transcribe_local_video(path: str, model: str = "base") -> str:
 
 @mcp.tool()
 def find_highlights(path: str, count: int = 3, min_duration: float = 20,
-                    max_duration: float = 60, use_ai: bool = True) -> str:
+                    max_duration: float = 60, use_ai: bool = True,
+                    mode: str = "auto", goal: str = "") -> str:
     """Suggest non-overlapping short highlights from a local video's transcript."""
-    validate_options(count, min_duration, max_duration, "conversation")
+    validate_options(count, min_duration, max_duration, mode)
     video = Path(path).expanduser().resolve()
     if not video.is_file():
         raise ValueError("Local video file does not exist")
     segments, language = transcribe(video)
-    if use_ai:
-        try:
-            clips, method = ai_highlights(segments, count, min_duration, max_duration)
-        except Exception:
-            clips = fallback_highlights(segments, count, min_duration, max_duration)
-            method = "offline-fallback"
-    else:
-        clips = fallback_highlights(segments, count, min_duration, max_duration)
-        method = "offline"
-    return json.dumps({"language": language, "method": method, "clips": clips}, ensure_ascii=False)
+    clips, method, warnings = select_editorial_highlights(segments, count, min_duration,
+                                                         max_duration, mode, goal, use_ai)
+    return json.dumps({"language": language, "method": method, "clips": clips,
+                       "warnings": warnings}, ensure_ascii=False)
 
 
 @mcp.tool()
@@ -111,7 +106,8 @@ def generate_clips(source: str, output_dir: str = "output", count: int = 3,
                    face_tracking: bool = True, candidate_plan: str | None = None,
                    candidate_ids: list[str] | None = None, layout: str = "portrait",
                    resolution: Literal["auto", "720p", "1080p"] = "1080p",
-                   preset: Literal["tiktok", "reels", "shorts"] | None = None) -> str:
+                   preset: Literal["tiktok", "reels", "shorts"] | None = None,
+                   mode: str = "auto", goal: str = "") -> str:
     """Create portrait MP4 clips with burned-in captions, separate SRT files, and a manifest.
 
     Platform presets target vertical 9:16; resolution auto uses 1080p.
@@ -121,7 +117,7 @@ def generate_clips(source: str, output_dir: str = "output", count: int = 3,
                               max_duration, allow_download, use_ai=use_ai,
                               face_tracking=face_tracking, candidate_plan=candidate_plan,
                               candidate_ids=candidate_ids, layout=layout,
-                              resolution=resolution, preset=preset), ensure_ascii=False)
+                              resolution=resolution, preset=preset, mode=mode, goal=goal), ensure_ascii=False)
 
 
 def main():

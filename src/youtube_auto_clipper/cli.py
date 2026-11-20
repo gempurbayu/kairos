@@ -47,7 +47,7 @@ def main():
                              args.max_duration, args.allow_download, args.model,
                              not args.offline, not args.no_face_tracking,
                              args.candidate_plan, args.select, args.layout or "portrait",
-                             args.resolution, args.preset), ensure_ascii=False, indent=2))
+                             args.resolution, args.preset, args.mode, args.goal), ensure_ascii=False, indent=2))
 
 if __name__ == "__main__":
     main()

@@ -9,13 +9,9 @@ from pathlib import Path
 from .pipeline import ai_highlights, select_nonoverlap, transcribe, get_source
 from .runtime import checkpoint, run_capture
 from .cache import media_hash
+from .editorial import detect_content, speech_units, score_window
 
 MODES = ("auto", "conversation", "instruction", "gaming")
-CUES = {
-    "conversation": ("why", "because", "story", "imagine", "kenapa", "karena", "cerita"),
-    "instruction": ("how", "step", "tip", "tutorial", "fix", "cara", "langkah", "solusi"),
-    "gaming": ("clutch", "win", "kill", "boss", "gg", "fail", "menang", "kalah", "anjir"),
-}
 
 
 def validate_options(count, minimum, maximum, mode):
@@ -35,9 +31,8 @@ def fingerprint(video):
 def choose_mode(segments, mode):
     if mode != "auto":
         return mode
-    words = re.findall(r"\w+", " ".join(s["text"] for s in segments).lower())
-    hits = {name: sum(w in cues for w in words) for name, cues in CUES.items()}
-    return max(hits, key=hits.get) if max(hits.values(), default=0) else "conversation"
+    detected, _ = detect_content(" ".join(s["text"] for s in segments))
+    return "conversation" if detected == "unknown" else detected
 
 
 def media_signals(video, start, end, frames_dir, candidate_id):
@@ -89,37 +84,60 @@ def media_signals(video, start, end, frames_dir, candidate_id):
     return audio, motion, evidence, warnings, thumbnails
 
 
-def rank_candidates(segments, count, minimum, maximum, mode, goal=""):
-    """Create transcript windows with interpretable editorial scores."""
+def candidate_pool(segments, minimum, maximum, mode, goal=""):
+    units = speech_units(segments, maximum=maximum)
     candidates = []
-    goal_words = set(re.findall(r"\w+", goal.lower()))
-    for index, segment in enumerate(segments):
+    for index, unit in enumerate(units):
         checkpoint()
-        texts = []
-        for part in segments[index:]:
-            duration = part["end"] - segment["start"]
+        for last in range(index, len(units)):
+            duration = units[last]["end"] - unit["start"]
             if duration > maximum:
                 break
-            texts.append(part["text"])
-            if duration < minimum:
-                continue
-            text = " ".join(texts)
-            words = re.findall(r"\w+", text.lower())
-            hits = sorted(set(words) & set(CUES[mode]))
-            goal_hits = sorted(set(words) & goal_words)
-            hook = min(100, len(hits) * 25 + (20 if "?" in text else 0))
-            complete = bool(re.search(r"[.!?][\"')\]]*\s*$", text))
-            context = 80 if complete else 35
-            relevance = min(100, len(goal_hits) / max(1, len(goal_words)) * 100) if goal_words else 50
-            pacing = min(100, len(words) / duration / 2.7 * 100)
-            score = round(.3 * hook + .3 * context + .2 * relevance + .2 * pacing, 2)
-            candidates.append({"start": segment["start"], "end": part["end"],
-                               "title": text[:100], "transcript": text,
-                               "reason": f"{mode} cues: {', '.join(hits) or 'none'}; sentence ending: {complete}; goal matches: {', '.join(goal_hits) or 'none'}",
-                               "score": score, "scores": {"hook": hook, "context": context, "goal_relevance": relevance, "pacing": round(pacing, 1)},
-                               "moment_type": {"conversation": "discussion", "instruction": "explanation", "gaming": "commentary_reaction"}[mode]})
+            if duration >= minimum:
+                candidates.append(score_window(units[index:last + 1], mode, goal))
+    return candidates
+
+
+def rank_candidates(segments, count, minimum, maximum, mode, goal=""):
+    """Rank complete utterance windows using bilingual, inspectable concepts."""
+    candidates = candidate_pool(segments, minimum, maximum, mode, goal)
     candidates.sort(key=lambda item: item["score"], reverse=True)
     return select_nonoverlap(candidates, count)
+
+
+def align_ai_candidate(segments, proposal, minimum, maximum, mode, goal):
+    # Reuse transcript timing/boundary evidence rather than trusting generated ranges.
+    candidates = candidate_pool(segments, minimum, maximum, mode, goal)
+    def overlap(item):
+        return max(0, min(item["end"], proposal["end"]) - max(item["start"], proposal["start"])) / (max(item["end"], proposal["end"]) - min(item["start"], proposal["start"]))
+    eligible = [c for c in candidates if overlap(c) >= .5]
+    if not eligible:
+        return None
+    chosen = max(eligible, key=lambda c: (overlap(c) + c["scores"]["context"] / 1000, c["score"]))
+    return {**chosen, "ai_reason": proposal["reason"],
+            "ai_proposal": {"start": proposal["start"], "end": proposal["end"]}}
+
+
+def select_editorial_highlights(segments, count, minimum, maximum, mode="auto", goal="",
+                               use_ai=False, ai_selector=None):
+    """One selection policy shared by discovery, direct rendering, and MCP."""
+    validate_options(count, minimum, maximum, mode)
+    offline = rank_candidates(segments, count, minimum, maximum, mode, goal)
+    if not use_ai:
+        return offline, "offline", []
+    selector = ai_selector or ai_highlights
+    try:
+        proposals, method = selector(segments, count, minimum, maximum, mode, goal)
+        if method != "gemini":
+            return offline, method, []
+        aligned = [align_ai_candidate(segments, c, minimum, maximum, mode, goal) for c in proposals]
+        aligned = sorted((c for c in aligned if c), key=lambda c: c["score"], reverse=True)
+        clips = select_nonoverlap(aligned, count)
+        if clips:
+            return clips, "gemini", []
+    except Exception:
+        pass
+    return offline, "offline-fallback", ["AI selection unavailable or invalid; used offline scoring"]
 
 
 def discover_candidates(source, output_dir="candidates", count=5, min_duration=20,
@@ -143,44 +161,31 @@ def discover_candidates(source, output_dir="candidates", count=5, min_duration=2
     segments, language = transcribe(video, model or os.getenv("WHISPER_MODEL", "base"))
     checkpoint("ranking candidates", 40)
     resolved_mode = choose_mode(segments, mode)
-    clips = rank_candidates(segments, count, min_duration, max_duration, resolved_mode, goal)
-    method = "offline"
-    warnings = []
+    clips, method, warnings = select_editorial_highlights(segments, count, min_duration,
+                                                          max_duration, mode, goal, use_ai)
     if not clips:
         warnings.append("No speech windows fit the requested duration; try shorter clips or another source")
-    if use_ai:
-        try:
-            ai, method = ai_highlights(segments, count, min_duration, max_duration, resolved_mode, goal)
-            # Re-score AI ranges with the same transparent editorial fields.
-            if method == "gemini":
-                enriched = []
-                for item in ai:
-                    subset = [s for s in segments if s["start"] >= item["start"] and s["end"] <= item["end"]]
-                    ranked = rank_candidates(subset, 1, min_duration, max_duration, resolved_mode, goal)
-                    if ranked:
-                        enriched.append({**ranked[0], "ai_reason": item["reason"]})
-                if enriched:
-                    clips = enriched
-                else:
-                    method = "offline-fallback"
-        except Exception:
-            method = "offline-fallback"
-            warnings.append("AI selection unavailable; used offline scoring")
     for index, clip in enumerate(clips, 1):
         checkpoint(f"sampling candidate {index}/{len(clips)}", 50 + 40 * (index - 1) / len(clips))
         clip["id"] = f"candidate_{index:02d}"
         audio, visual, evidence, issues, thumbs = (media_signals(video, clip["start"], clip["end"], folder, clip["id"])
                                                  if analyze_media else (None, None, [], [], []))
         clip["scores"].update(audio_dynamics=audio, visual_change=visual)
-        clip.update(evidence=["transcript"] + evidence, warnings=issues, thumbnails=thumbs,
-                    confidence="low" if resolved_mode == "gaming" else "medium")
-        if resolved_mode == "gaming":
+        clip.update(evidence=["transcript"] + evidence, warnings=clip["warnings"] + issues, thumbnails=thumbs,
+                    confidence="low" if mode == "gaming" or clip["content_mode"] in ("gaming", "unknown") or clip["warnings"] else "medium")
+        if mode == "gaming" or clip["content_mode"] == "gaming":
             clip["warnings"].append("Experimental: does not recognize kills, wins, HUD, or game events")
-            clip["score"] = round(.7 * clip["score"] + .2 * (audio or 0) + .1 * (visual or 0), 2)
+            # Audio/frame changes corroborate a transcript shortlist; they cannot
+            # turn unsupported chatter into a high-scoring gameplay event.
+            if clip["content_mode"] == "gaming":
+                clip["score"] = round(.9 * clip["score"] + .07 * (audio or 0) + .03 * (visual or 0), 2)
     clips.sort(key=lambda c: c["score"], reverse=True)
     plan = {"schema_version": 1, "source": str(video), "source_sha256": fingerprint(video),
             "language": language, "mode": resolved_mode, "requested_mode": mode, "goal": goal,
             "method": method, "warnings": warnings, "clips": clips,
+            "analysis": {"version": 2, "goal_matching": "English/Indonesian concept lexicon plus literal terms",
+                         "segment_classification": "transcript cues only; no visual event recognition",
+                         "boundaries": "ASR punctuation and speech pauses; not guaranteed semantic completeness"},
             "note": "Editorial signals, not calibrated probabilities or virality predictions. Review before rendering."}
     checkpoint("writing preview", 98)
     path = folder / "candidates.json"

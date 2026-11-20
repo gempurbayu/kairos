@@ -164,9 +164,9 @@ uv tool install kairos-video-clipper
 
 For a direct harness launch without a Git URL, configure the MCP command as `uvx` with arguments `--from`, `kairos-video-clipper`, and `kairos-mcp`. The first launch downloads the package and dependencies; subsequent launches use uv's cache.
 
-## Preview and select candidates (v0.3 development)
+## Preview and select candidates (v0.3)
 
-The working tree adds a discovery workflow; the latest published package may not include it yet. Install this checkout with `pip install -e .` to use it.
+Requires Kairos 0.3 or newer. Upgrade with `uv tool upgrade kairos-video-clipper`, or install this checkout with `pip install -e .`.
 
 ```bash
 kairos ./video.mp4 --discover --mode instruction --goal "useful tips" --offline --count 5 --output ./candidates
@@ -181,11 +181,15 @@ kairos ./video.mp4 --candidate-plan ./candidates/review-EXAMPLE/candidates.json 
 
 Replace `review-EXAMPLE` with the actual review folder. A SHA-256 fingerprint checks that the plan targets the same video. Rendering reuses the transcript cache when the video bytes, model, engine version, and transcription settings match.
 
-Modes are `auto`, `conversation`, `instruction`, and experimental `gaming`. Auto mode uses transcript keywords and can be overridden. Offline scoring recognizes English and some Indonesian cues. Use `--goal` to favor matching transcript terms; optional Gemini selection also receives the mode and goal. Candidate scores include hook, context, pacing, goal relevance, audio dynamics, and sampled frame changes. Confidence labels are heuristic, not calibrated probabilities. Audio/frame signals are sampled only for the transcript shortlist, so silent action footage is not supported. Gaming does not recognize specific events or HUD information. Use `--no-media-analysis` to skip audio/frame sampling.
+Modes are `auto`, `conversation`, `instruction`, and experimental `gaming`. Auto mode classifies each candidate window from transcript cues, with `unknown` when evidence is insufficient. Explicit modes are retained but a mismatch warning is shown when detected content differs. Offline goal matching maps a small set of common English/Indonesian editorial concepts (such as funny/lucu and reaction/reaksi), with literal matching for other terms; it is not general multilingual semantic understanding. Use `--goal` with both discovery and direct rendering. Optional Gemini selection also receives the mode and cross-language goal, then its proposed ranges are aligned back to transcript windows.
+
+Candidate scores include hook, context, pacing, goal relevance, repetition/CTA and topic-transition penalties, audio dynamics, and sampled frame changes. Windows are grouped using ASR punctuation and speech pauses. Dependent openings, unanswered questions, or uncertain endings are flagged, rather than guaranteed to be complete. The review page shows detected content, matched goal concepts, and boundary warnings.
+
+Confidence labels are heuristic, not calibrated probabilities. Audio/frame signals are sampled only for the transcript shortlist, so silent action footage is not supported. Gaming does not recognize specific events or HUD information. Use `--no-media-analysis` to skip audio/frame sampling.
 
 For MCP, call `discover_clip_candidates`, review the response, and pass `plan_path` as `candidate_plan` plus the chosen `candidate_ids` to `generate_clips`. Existing `find_highlights` and direct rendering remain available.
 
-## Local review studio (v0.3 development)
+## Local review studio (v0.3)
 
 Open a candidate plan in your browser:
 
@@ -205,7 +209,7 @@ kairos 'https://www.youtube.com/watch?v=VIDEO_ID' --discover --allow-download --
 
 Use the returned local `source` and `plan_path` to open the review studio. Downloading remains opt-in and requires authorization to process the source.
 
-## Platform presets and output resolution (v0.3 development)
+## Platform presets and output resolution (v0.3)
 
 Choose a platform and let Kairos select the vertical export dimensions:
 
@@ -224,7 +228,7 @@ The platform presets are convenient vertical export targets. They currently shar
 
 The review studio includes platform/resolution dropdowns and a live dimensions summary. Set initial choices with `--review --preset reels --resolution 720p`. MCP render tools and job options accept the same `preset` and `resolution` names. The output manifest records requested/resolved resolution, dimensions, aspect ratio, layout, and codecs. MP4 video uses H.264/yuv420p and audio uses AAC.
 
-## Background jobs and transcript cache (v0.3 development)
+## Background jobs and transcript cache (v0.3)
 
 For long-running MCP work, start a job instead of holding one tool call open:
 
@@ -281,7 +285,7 @@ Captions are burned into the MP4 in short word groups with karaoke highlighting.
 - faster-whisper transcribes audio locally and supplies word timestamps.
 - Offline selection scores transcript windows using speech pacing, vocabulary variety, hook words, and sentence completion. Gemini can rank candidate moments when configured; failures fall back to offline selection.
 - Face tracking samples frames and follows the largest detected face. If no face is found, Kairos uses a centered crop. It does not identify or follow a particular person.
-- Highlight selection is based on transcript signals; it is not visual scene understanding and cannot guarantee virality or editorial quality.
+- Highlight selection is based on transcript signals; it is not visual scene understanding and cannot guarantee virality or editorial quality. Content labels and boundary evidence are heuristic. Common English/Indonesian concept matching does not translate arbitrary goals or identify gameplay events.
 - Videos with little or no speech may produce fewer clips or no clips.
 - Kairos does not bypass DRM, access restrictions, or platform safeguards. Follow applicable copyright rules and platform terms when processing or downloading videos.
 
@@ -296,7 +300,7 @@ GitHub Actions runs the test suite on Python 3.10, 3.11, and 3.12 for pushes and
 
 ## Release and PyPI publishing
 
-See [`CHANGELOG.md`](CHANGELOG.md) for release history. Pushing a version tag such as `v0.2.4` runs tests, builds the distributions, checks that the tag matches `pyproject.toml`, and publishes them to PyPI through GitHub Actions. The publisher uses PyPI Trusted Publishing (OIDC), so no PyPI API token is stored in GitHub.
+See [`CHANGELOG.md`](CHANGELOG.md) for release history. Pushing a version tag such as `v0.3.0` runs tests, builds the distributions, checks that the tag matches `pyproject.toml`, and publishes them to PyPI through GitHub Actions. The publisher uses PyPI Trusted Publishing (OIDC), so no PyPI API token is stored in GitHub.
 
 Version `0.2.3` was the first automatic publication. The [PyPI Trusted Publisher](https://docs.pypi.org/trusted-publishers/) is configured for owner `gempurbayu`, repository `kairos`, workflow `publish.yml`, and environment `pypi`. Every release tag must match the package version exactly.
 

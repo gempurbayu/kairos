@@ -4,19 +4,21 @@ Notable changes to Kairos are recorded here. This changelog follows [Keep a Chan
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-11-21
+
 ### Added
 
+- Shared English/Indonesian editorial concept matching, per-candidate transcript content labels, and content/mode mismatch warnings.
+- Punctuation/pause-based candidate boundaries, explicit context warnings, and repetition/CTA/topic-transition penalties.
+- Validated AI proposal alignment and deduplication using transcript boundaries.
 - TikTok/Reels/Shorts vertical export presets and auto/720p/1080p output choices across CLI, MCP, jobs, and review UI.
 - Export settings in output manifests and explicit H.264/yuv420p output encoding.
-
 - Local browser review studio with candidate playback, timestamp edits, selection, render progress/cancel, and MP4/SRT links.
 - Full-frame portrait padding and landscape layout presets alongside face-tracked portrait cropping.
 - Explicitly authorized YouTube discovery downloads retained alongside their review plan.
-
 - Content-addressed local transcript caching shared across discovery and rendering, with model/configuration invalidation and atomic writes.
 - Session-scoped MCP background jobs with a bounded queue, phase progress, cancellation, isolated outputs, and persisted result files.
 - Synthetic FFmpeg/MCP integration tests and an interval-based candidate evaluation script for human-marked video moments.
-
 - Reviewable local candidate discovery with conversation, instruction, auto, and experimental commented-gaming modes.
 - Editorial goals, component scores, heuristic confidence, transcript excerpts, audio dynamics, sampled frame changes, and thumbnail previews.
 - CLI discovery and candidate selection, plus the `discover_clip_candidates` MCP tool.
@@ -25,9 +27,7 @@ Notable changes to Kairos are recorded here. This changelog follows [Keep a Chan
 ### Fixed
 
 - Review streaming now handles browser-abandoned video ranges without noisy connection errors.
-
 - Constrained the MCP SDK to its compatible v1 API; v2 removes the FastMCP import used by this server.
-
 - Pipeline fallback warnings now go to stderr to preserve MCP stdio output.
 - Rejected non-finite duration options and AI timestamps outside transcript coverage.
 
@@ -80,7 +80,8 @@ Notable changes to Kairos are recorded here. This changelog follows [Keep a Chan
 - Offline highlight scoring, portrait clip rendering, face tracking, karaoke captions, SRT subtitles, and a JSON manifest.
 - CLI and MCP server entry points, a portable Agent Skill, and initial GitHub Actions CI.
 
-[Unreleased]: https://github.com/gempurbayu/kairos/compare/v0.2.4...HEAD
+[Unreleased]: https://github.com/gempurbayu/kairos/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/gempurbayu/kairos/compare/v0.2.4...v0.3.0
 [0.2.4]: https://github.com/gempurbayu/kairos/compare/v0.2.3...v0.2.4
 [0.2.3]: https://github.com/gempurbayu/kairos/compare/v0.2.2...v0.2.3
 [0.2.2]: https://github.com/gempurbayu/kairos/compare/v0.2.1...v0.2.2
