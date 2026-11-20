@@ -312,9 +312,16 @@ def _filter_path(path):
     return str(path).replace("\\", "\\\\").replace(":", "\\:").replace("'", "\\'")
 
 
-def render_clip(video, start, end, target, captions=None, face_tracking=True):
+def render_clip(video, start, end, target, captions=None, face_tracking=True, layout="portrait"):
     require_binary("ffmpeg")
-    vf = _portrait_filter(video, start, end, face_tracking)
+    if layout not in ("portrait", "fit", "landscape"):
+        raise ValueError("Layout must be portrait, fit, or landscape")
+    if layout == "portrait":
+        vf = _portrait_filter(video, start, end, face_tracking)
+    else:
+        width, height = (1080, 1920) if layout == "fit" else (1920, 1080)
+        vf = (f"scale={width}:{height}:force_original_aspect_ratio=decrease:force_divisible_by=2,"
+              f"pad={width}:{height}:(ow-iw)/2:(oh-ih)/2:color=black,setsar=1")
     if captions:
         filters = run_command(["ffmpeg", "-hide_banner", "-filters"])
         if not re.search(r"\bass\s+V->V", filters):
@@ -328,10 +335,12 @@ def render_clip(video, start, end, target, captions=None, face_tracking=True):
 
 def process(source, output_dir="output", count=3, min_duration=20, max_duration=60,
             allow_download=False, model_name=None, use_ai=True, face_tracking=True,
-            candidate_plan=None, candidate_ids=None):
+            candidate_plan=None, candidate_ids=None, layout="portrait"):
     checkpoint("validating", 2)
     from .discovery import validate_options, load_selection
     validate_options(count, min_duration, max_duration, "auto")
+    if layout not in ("portrait", "fit", "landscape"):
+        raise ValueError("Layout must be portrait, fit, or landscape")
     if bool(candidate_plan) != bool(candidate_ids):
         raise ValueError("Provide both candidate_plan and candidate_ids")
     selected = None
@@ -377,11 +386,15 @@ def process(source, output_dir="output", count=3, min_duration=20, max_duration=
             srt = output / f"{stem}.srt"
             ass = Path(tmp) / f"{stem}.ass"
             make_ass(segments, clip["start"], clip["end"], ass)
-            render_clip(video, clip["start"], clip["end"], mp4, ass, face_tracking)
+            if layout == "portrait":
+                render_clip(video, clip["start"], clip["end"], mp4, ass, face_tracking)
+            else:
+                render_clip(video, clip["start"], clip["end"], mp4, ass, face_tracking, layout=layout)
             make_srt(segments, clip["start"], clip["end"], srt)
             results.append({**clip, "video": str(mp4), "subtitles": str(srt)})
         manifest = {"source": source, "language": language, "selection_method": method,
-                    "face_tracking": face_tracking, "captions_burned_in": True,
+                    "face_tracking": face_tracking if layout == "portrait" else False,
+                    "layout": layout, "captions_burned_in": True,
                     "clips": results, "note": "TikTok-style captions are burned into MP4; SRT is also provided separately."}
         checkpoint("writing manifest", 98)
         (output / "manifest.json").write_text(json.dumps(manifest, indent=2, ensure_ascii=False), encoding="utf-8")

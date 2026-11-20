@@ -109,3 +109,19 @@ def test_mcp_stdout_remains_clean_on_fallback(tmp_path, monkeypatch, capsys):
     assert output.out == ""
     assert "offline" in output.err
     assert "sensitive" not in output.err
+
+
+def test_discovery_download_remains_opt_in(tmp_path, monkeypatch):
+    with pytest.raises(ValueError, match="explicitly allow"):
+        discovery.discover_candidates('https://www.youtube.com/watch?v=example', str(tmp_path))
+    def download(source, workspace, allow_download):
+        assert allow_download is True
+        video = workspace / 'source.mp4'
+        video.write_bytes(b'authorized source fixture')
+        return video
+    monkeypatch.setattr(discovery, 'get_source', download)
+    monkeypatch.setattr(discovery, 'transcribe', lambda *_: (SEGMENTS, 'en'))
+    result = discovery.discover_candidates('https://www.youtube.com/watch?v=example', str(tmp_path),
+                                           analyze_media=False, allow_download=True)
+    assert Path(result['source']).is_file()
+    assert Path(result['source']).is_relative_to(Path(result['plan_path']).parent)

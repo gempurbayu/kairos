@@ -1,6 +1,6 @@
 # Candidate quality evaluation
 
-Synthetic integration checks verify software behavior, not whether real highlights are good. No authorized real-world evaluation video has been supplied for this development cycle. Do not report synthetic scores as real-world quality results.
+Synthetic integration checks verify software behavior, not whether real highlights are good. An authorized five-minute gaming excerpt is used for an initial local smoke evaluation in this development cycle. That is not a benchmark across categories. Do not report synthetic scores as real-world quality results or claim quality improvements without reference annotations.
 
 ## Automated checks
 
@@ -31,3 +31,7 @@ Use at least one conversation, instruction, and commented-gaming source that you
 6. Compare changes using the same sources, annotations, mode, goal, and duration settings. Keep missed moments as regression examples.
 
 The script reports interval precision and reference-moment recall with an intersection-over-union threshold of 0.3. A match only means temporal overlap, not a good editorial cut. It checks the source hashes match. Human review remains necessary, especially for gaming events without speech or information at the screen edges.
+
+## Review studio checks
+
+The review HTTP tests check token/host/origin validation, media byte-range streaming, immutable edited plans, invalid timestamp rejection, and output dimensions for fit/landscape layouts. Browser inspection should additionally cover desktop/mobile widths, actual source playback, selecting candidates, editing timestamps, and rendering status/results. The source player is not a simulation of the final layout. Confirm the final MP4 before sharing.

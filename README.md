@@ -182,6 +182,26 @@ Modes are `auto`, `conversation`, `instruction`, and experimental `gaming`. Auto
 
 For MCP, call `discover_clip_candidates`, review the response, and pass `plan_path` as `candidate_plan` plus the chosen `candidate_ids` to `generate_clips`. Existing `find_highlights` and direct rendering remain available.
 
+## Local review studio (v0.3 development)
+
+Open a candidate plan in your browser:
+
+```bash
+kairos ./video.mp4 --review --candidate-plan ./candidates/review-EXAMPLE/candidates.json
+```
+
+Kairos starts a loopback-only server and opens a session URL. The page lets you play candidate ranges, select clips, edit start/end seconds, choose a layout, and start/cancel a render job. Completed jobs offer MP4 and SRT links. Keep the terminal running; Ctrl+C closes the review server. Revisions are saved separately so the original candidate plan stays unchanged. Edited timestamps are validated against the source duration; original transcript excerpts and scores are not recalculated after edits.
+
+Layouts: `portrait` follows the largest face when enabled, `fit` keeps the full source frame inside a padded 9:16 canvas, and `landscape` fits the source into 16:9. Gaming and instruction review sessions default to `fit`. The player previews the original source; final layout, tracking, and captions are applied during render. Browser playback depends on the source codec; use an H.264/AAC MP4 if your browser cannot play the input. The same presets are available through CLI `--layout` and MCP `generate_clips(layout=...)` or render-job options.
+
+For an authorized YouTube source, discovery can retain the downloaded video beside its plan:
+
+```bash
+kairos 'https://www.youtube.com/watch?v=VIDEO_ID' --discover --allow-download --mode gaming --offline --output ./candidates
+```
+
+Use the returned local `source` and `plan_path` to open the review studio. Downloading remains opt-in and requires authorization to process the source.
+
 ## Background jobs and transcript cache (v0.3 development)
 
 For long-running MCP work, start a job instead of holding one tool call open:

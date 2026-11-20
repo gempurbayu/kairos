@@ -20,7 +20,16 @@ def main():
     parser.add_argument("--no-media-analysis", action="store_true", help="Skip audio/frame preview sampling")
     parser.add_argument("--candidate-plan", help="Path to candidates.json from discovery")
     parser.add_argument("--select", nargs="+", help="Candidate IDs to render from the plan")
+    parser.add_argument("--review", action="store_true", help="Open a local review page for --candidate-plan")
+    parser.add_argument("--port", type=int, default=0, help="Local review port; 0 chooses a free port")
+    parser.add_argument("--layout", choices=("portrait", "fit", "landscape"), default="portrait")
     args = parser.parse_args()
+    if args.review:
+        if not args.candidate_plan or args.discover or args.select:
+            parser.error("Review requires --candidate-plan and cannot combine with --discover or --select")
+        from .review import serve_review
+        serve_review(args.source, args.candidate_plan, port=args.port)
+        return
     if args.discover:
         from .discovery import discover_candidates
         if args.candidate_plan or args.select:
@@ -28,13 +37,13 @@ def main():
         result = discover_candidates(args.source, args.output, args.count,
                                     args.min_duration, args.max_duration, args.mode,
                                     args.goal, not args.offline, args.model,
-                                    not args.no_media_analysis)
+                                    not args.no_media_analysis, args.allow_download)
         print(json.dumps(result, ensure_ascii=False, indent=2))
         return
     print(json.dumps(process(args.source, args.output, args.count, args.min_duration,
                              args.max_duration, args.allow_download, args.model,
                              not args.offline, not args.no_face_tracking,
-                             args.candidate_plan, args.select), ensure_ascii=False, indent=2))
+                             args.candidate_plan, args.select, args.layout), ensure_ascii=False, indent=2))
 
 if __name__ == "__main__":
     main()

@@ -91,15 +91,16 @@ def find_highlights(path: str, count: int = 3, min_duration: float = 20,
 def discover_clip_candidates(path: str, output_dir: str = "candidates", count: int = 5,
                              min_duration: float = 20, max_duration: float = 60,
                              mode: str = "auto", goal: str = "", use_ai: bool = False,
-                             analyze_media: bool = True) -> str:
+                             analyze_media: bool = True, allow_download: bool = False) -> str:
     """Preview category-aware candidates, scores, transcript excerpts, and thumbnails.
 
-    Local videos only. Review candidates before passing plan_path and IDs to generate_clips.
+    YouTube URLs require allow_download and user authorization; the downloaded source
+    is retained beside the review plan. Review candidates before rendering.
     Gaming is experimental and does not recognize specific game events.
     """
     return json.dumps(discover_candidates(path, output_dir, count, min_duration,
                                          max_duration, mode, goal, use_ai,
-                                         analyze_media=analyze_media), ensure_ascii=False)
+                                         analyze_media=analyze_media, allow_download=allow_download), ensure_ascii=False)
 
 
 @mcp.tool()
@@ -107,7 +108,7 @@ def generate_clips(source: str, output_dir: str = "output", count: int = 3,
                    min_duration: float = 20, max_duration: float = 60,
                    allow_download: bool = False, use_ai: bool = True,
                    face_tracking: bool = True, candidate_plan: str | None = None,
-                   candidate_ids: list[str] | None = None) -> str:
+                   candidate_ids: list[str] | None = None, layout: str = "portrait") -> str:
     """Create portrait MP4 clips with burned-in captions, separate SRT files, and a manifest.
 
     For YouTube sources, allow_download must be true and the user must have rights to use the video.
@@ -115,7 +116,7 @@ def generate_clips(source: str, output_dir: str = "output", count: int = 3,
     return json.dumps(process(source, output_dir, count, min_duration,
                               max_duration, allow_download, use_ai=use_ai,
                               face_tracking=face_tracking, candidate_plan=candidate_plan,
-                              candidate_ids=candidate_ids), ensure_ascii=False)
+                              candidate_ids=candidate_ids, layout=layout), ensure_ascii=False)
 
 
 def main():

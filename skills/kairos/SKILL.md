@@ -20,7 +20,8 @@ Use this skill when asked to identify and render highlights from long-form video
 4. After the user chooses candidates, pass the returned `plan_path` as `candidate_plan` and the selected IDs as `candidate_ids` to `generate_clips`. Use the same local source. If no suitable speech windows are found, explain that this workflow currently needs speech; do not invent visual highlights.
 5. Call `generate_clips` with the chosen settings.
 6. Read the returned manifest and report exact output paths, titles and timestamps.
-7. Explain that TikTok-style captions are burned into MP4 and an editable `.srt` is also provided.
+7. For visual review, give the user `kairos SOURCE --review --candidate-plan PLAN_PATH` using the local source and returned plan. Explain that preview shows the original frame and renders apply the selected layout. Prefer `fit` for gaming and screen recordings to keep important screen content; `portrait` uses face tracking and `landscape` fits 16:9. Pass `layout` when rendering.
+8. Explain that TikTok-style captions are burned into MP4 and an editable `.srt` is also provided.
 
 ## Defaults
 - 3 clips, 20–60 seconds, 1080×1920 MP4, burned-in TikTok-style captions, and separate SRT files.

@@ -90,8 +90,11 @@ class JobManager:
                 job.update(status="cancelled", stage="cancelled", updated_at=now())
                 self._save(job)
         except Exception as exc:
+            message = f"{type(exc).__name__}: job failed; check media and tool prerequisites"
+            if isinstance(exc, RuntimeError) and str(exc).startswith("FFmpeg needs the ass/libass"):
+                message = "FFmpeg needs the ass/libass subtitle filter; install a build with libass and retry"
             with self.lock:
-                job.update(status="failed", stage="failed", error=f"{type(exc).__name__}: job failed; check media and tool prerequisites", updated_at=now())
+                job.update(status="failed", stage="failed", error=message, updated_at=now())
                 self._save(job)
         finally:
             _context.reset(token)

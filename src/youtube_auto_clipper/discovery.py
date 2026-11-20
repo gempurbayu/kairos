@@ -6,7 +6,7 @@ import re
 import subprocess
 from pathlib import Path
 
-from .pipeline import ai_highlights, select_nonoverlap, transcribe
+from .pipeline import ai_highlights, select_nonoverlap, transcribe, get_source
 from .runtime import checkpoint, run_capture
 from .cache import media_hash
 
@@ -124,17 +124,22 @@ def rank_candidates(segments, count, minimum, maximum, mode, goal=""):
 
 def discover_candidates(source, output_dir="candidates", count=5, min_duration=20,
                         max_duration=60, mode="auto", goal="", use_ai=False, model=None,
-                        analyze_media=True):
+                        analyze_media=True, allow_download=False):
     checkpoint("validating", 2)
     validate_options(count, min_duration, max_duration, mode)
     video = Path(source).expanduser().resolve()
-    if not video.is_file():
-        raise ValueError("Candidate discovery requires a local video file")
+    if not video.is_file() and not allow_download:
+        raise ValueError("Provide a local video or explicitly allow an authorized YouTube download")
     output = Path(output_dir).expanduser().resolve()
     output.mkdir(parents=True, exist_ok=True)
     # Each plan has its own directory; prior previews are never overwritten.
     import tempfile
     folder = Path(tempfile.mkdtemp(prefix="review-", dir=output))
+    if not video.is_file():
+        checkpoint("downloading source", 5)
+        download_folder = folder / "source"
+        download_folder.mkdir()
+        video = get_source(source, download_folder, allow_download)
     segments, language = transcribe(video, model or os.getenv("WHISPER_MODEL", "base"))
     checkpoint("ranking candidates", 40)
     resolved_mode = choose_mode(segments, mode)

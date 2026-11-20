@@ -6,6 +6,10 @@ Notable changes to Kairos are recorded here. This changelog follows [Keep a Chan
 
 ### Added
 
+- Local browser review studio with candidate playback, timestamp edits, selection, render progress/cancel, and MP4/SRT links.
+- Full-frame portrait padding and landscape layout presets alongside face-tracked portrait cropping.
+- Explicitly authorized YouTube discovery downloads retained alongside their review plan.
+
 - Content-addressed local transcript caching shared across discovery and rendering, with model/configuration invalidation and atomic writes.
 - Session-scoped MCP background jobs with a bounded queue, phase progress, cancellation, isolated outputs, and persisted result files.
 - Synthetic FFmpeg/MCP integration tests and an interval-based candidate evaluation script for human-marked video moments.

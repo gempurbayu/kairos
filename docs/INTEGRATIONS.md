@@ -208,7 +208,7 @@ Ask your agent: "Find five useful teaching moments in `/absolute/path/video.mp4`
 
 The agent should call `discover_clip_candidates` with `path`, `mode: "instruction"`, `goal: "useful teaching moments"`, `count: 5`, and `use_ai: false`. Use `gaming` for experimental commentary/reaction analysis. `auto` chooses a mode from transcript keywords.
 
-After review, ask: "Render candidate_01 and candidate_03 from that plan." The agent calls `generate_clips` with the same local source, `candidate_plan` set to the returned `plan_path`, and `candidate_ids: ["candidate_01", "candidate_03"]`. The fingerprint must match the video and timestamps must be inside its duration. Discovery never downloads a YouTube URL; use a local authorized source.
+After review, ask: "Render candidate_01 and candidate_03 from that plan." The agent calls `generate_clips` with the same local source, `candidate_plan` set to the returned `plan_path`, and `candidate_ids: ["candidate_01", "candidate_03"]`. The fingerprint must match the video and timestamps must be inside its duration. For an authorized YouTube URL, set `allow_download: true` explicitly. Discovery retains a local source beside the plan; use the returned local `source` for review and selected rendering.
 
 ## Long-running work with background jobs (v0.3 development)
 
@@ -217,3 +217,9 @@ Use `start_clip_job(kind="discover", options={"source": "/absolute/video.mp4", "
 Use `cancel_clip_job` to request cancellation. Wait for `cancelled`, `failed`, or `completed` before treating the job as finished. Progress is a phase estimate, not an ETA. Native inference and network calls may delay cancellation; FFmpeg children are terminated promptly at polling checkpoints. Jobs are session-scoped and cannot resume across server restarts. Synchronous tools remain available.
 
 Transcript caching is shared by discovery, render, and transcription tools. Set `KAIROS_CACHE_DIR`, `KAIROS_DISABLE_CACHE`, or `KAIROS_JOBS_DIR` in the server's local environment if needed. Cache/result files can contain private transcript text and paths. They are local artifacts and should not be committed.
+
+## Review studio and layouts (v0.3 development)
+
+To open a plan in the local review UI, run `kairos /local/video.mp4 --review --candidate-plan /path/to/candidates.json`. Keep the terminal open. The page edits timestamps, selects IDs, and starts render jobs with progress/cancel and output links. The server binds only to 127.0.0.1 and its session URL must remain private.
+
+Render tools and jobs accept `layout: "portrait"`, `"fit"`, or `"landscape"`. `fit` preserves the full frame with portrait padding; prefer it for gameplay, slides, and screen recordings. Portrait uses the existing `face_tracking` option. Other layouts disable face tracking. The UI's source preview does not simulate the final crop or burned captions.
