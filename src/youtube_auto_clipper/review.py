@@ -85,7 +85,10 @@ class ReviewHandler(BaseHTTPRequestHandler):
         self.send_header("Content-Length", str(len(payload)))
         self.headers_common()
         self.end_headers()
-        self.wfile.write(payload)
+        try:
+            self.wfile.write(payload)
+        except (BrokenPipeError, ConnectionResetError):
+            pass
 
     def headers_common(self):
         self.send_header("Cache-Control", "no-store")
@@ -137,7 +140,10 @@ class ReviewHandler(BaseHTTPRequestHandler):
                 chunk = stream.read(min(left, 1024 * 1024))
                 if not chunk:
                     break
-                self.wfile.write(chunk)
+                try:
+                    self.wfile.write(chunk)
+                except (BrokenPipeError, ConnectionResetError):
+                    return
                 left -= len(chunk)
 
     def do_GET(self):
@@ -184,6 +190,8 @@ class ReviewHandler(BaseHTTPRequestHandler):
                 self.reply(200, job)
             else:
                 self.reply(404, {"error": "Not found"})
+        except (BrokenPipeError, ConnectionResetError):
+            return
         except (ValueError, KeyError, IndexError, StopIteration, OSError):
             self.reply(400, {"error": "Requested resource is not available"})
 

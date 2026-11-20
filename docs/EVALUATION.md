@@ -35,3 +35,11 @@ The script reports interval precision and reference-moment recall with an inters
 ## Review studio checks
 
 The review HTTP tests check token/host/origin validation, media byte-range streaming, immutable edited plans, invalid timestamp rejection, and output dimensions for fit/landscape layouts. Browser inspection should additionally cover desktop/mobile widths, actual source playback, selecting candidates, editing timestamps, and rendering status/results. The source player is not a simulation of the final layout. Confirm the final MP4 before sharing.
+
+## Initial real-source smoke evaluation
+
+A five-minute authorized excerpt of a gaming livestream was transcribed locally with Whisper `base` and analyzed in gaming mode. Discovery produced five candidates, and one selected candidate was rendered with full-frame portrait padding and captions. The source and generated artifacts stay outside Git.
+
+The sampled interval primarily contained live-chat discussion rather than gameplay. All five candidates had low confidence, no matched gaming keywords, and no matches for the supplied English editorial goal in the Indonesian transcript. This verifies the pipeline on real media but does not demonstrate gameplay-event detection or good editorial selection. Reference timestamps have not been annotated, so no precision/recall claim is made.
+
+Follow-up evaluation should cover actual gameplay intervals, goals in the transcript language, slang transcription accuracy, complete opening/ending context, and caption review. Do not infer segment content solely from the video title or category.

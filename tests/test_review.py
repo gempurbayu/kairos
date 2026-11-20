@@ -77,3 +77,20 @@ def test_layout_render_preserves_output_shape(video, tmp_path, layout, dimension
     result = json.loads(subprocess.check_output(["ffprobe", "-v", "error", "-show_streams", "-of", "json", str(output)]))
     stream = next(s for s in result["streams"] if s["codec_type"] == "video")
     assert (stream["width"], stream["height"]) == dimensions
+
+
+def test_abandoned_video_stream_does_not_raise(tmp_path):
+    from youtube_auto_clipper.review import ReviewHandler
+    media = tmp_path / 'fixture.mp4'
+    media.write_bytes(b'fixture media')
+    handler = object.__new__(ReviewHandler)
+    handler.headers = {}
+    handler.send_response = lambda *_: None
+    handler.send_header = lambda *_: None
+    handler.headers_common = lambda: None
+    handler.end_headers = lambda: None
+    class Disconnected:
+        def write(self, _):
+            raise BrokenPipeError('browser abandoned old range')
+    handler.wfile = Disconnected()
+    handler.send_media(media, 'video/mp4')

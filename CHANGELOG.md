@@ -21,6 +21,8 @@ Notable changes to Kairos are recorded here. This changelog follows [Keep a Chan
 
 ### Fixed
 
+- Review streaming now handles browser-abandoned video ranges without noisy connection errors.
+
 - Constrained the MCP SDK to its compatible v1 API; v2 removes the FastMCP import used by this server.
 
 - Pipeline fallback warnings now go to stderr to preserve MCP stdio output.
