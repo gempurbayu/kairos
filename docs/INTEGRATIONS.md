@@ -209,3 +209,11 @@ Ask your agent: "Find five useful teaching moments in `/absolute/path/video.mp4`
 The agent should call `discover_clip_candidates` with `path`, `mode: "instruction"`, `goal: "useful teaching moments"`, `count: 5`, and `use_ai: false`. Use `gaming` for experimental commentary/reaction analysis. `auto` chooses a mode from transcript keywords.
 
 After review, ask: "Render candidate_01 and candidate_03 from that plan." The agent calls `generate_clips` with the same local source, `candidate_plan` set to the returned `plan_path`, and `candidate_ids: ["candidate_01", "candidate_03"]`. The fingerprint must match the video and timestamps must be inside its duration. Discovery never downloads a YouTube URL; use a local authorized source.
+
+## Long-running work with background jobs (v0.3 development)
+
+Use `start_clip_job(kind="discover", options={"source": "/absolute/video.mp4", "mode": "conversation", "use_ai": false})`, then poll `get_clip_job(job_id=...)`. Completed status includes the result object and its saved path. Set `include_result=false` to avoid returning the result repeatedly. For rendering, use `kind="render"` with `source`, `candidate_plan`, and `candidate_ids` in `options`. Job output directories are assigned automatically; an `output_dir` option is overridden to protect other jobs.
+
+Use `cancel_clip_job` to request cancellation. Wait for `cancelled`, `failed`, or `completed` before treating the job as finished. Progress is a phase estimate, not an ETA. Native inference and network calls may delay cancellation; FFmpeg children are terminated promptly at polling checkpoints. Jobs are session-scoped and cannot resume across server restarts. Synchronous tools remain available.
+
+Transcript caching is shared by discovery, render, and transcription tools. Set `KAIROS_CACHE_DIR`, `KAIROS_DISABLE_CACHE`, or `KAIROS_JOBS_DIR` in the server's local environment if needed. Cache/result files can contain private transcript text and paths. They are local artifacts and should not be committed.

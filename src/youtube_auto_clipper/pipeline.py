@@ -5,10 +5,12 @@ import os
 import re
 import shutil
 import sys
-import subprocess
 import tempfile
 from pathlib import Path
 from urllib.parse import urlparse
+
+from .runtime import checkpoint, run_capture
+from .cache import cached_transcript
 
 from dotenv import load_dotenv
 
@@ -16,7 +18,7 @@ load_dotenv()
 
 
 def run_command(args):
-    result = subprocess.run(args, text=True, capture_output=True)
+    result = run_capture(args)
     if result.returncode:
         raise RuntimeError(f"Command failed: {args[0]}\n{result.stderr[-3000:]}")
     return result.stdout
@@ -62,12 +64,19 @@ def get_source(source, workspace, allow_download=False):
 
 
 def transcribe(video, model_name="base"):
+    checkpoint("transcribing", 15)
+    return cached_transcript(video, model_name, lambda: _transcribe_uncached(video, model_name))
+
+
+def _transcribe_uncached(video, model_name="base"):
     from faster_whisper import WhisperModel
     model = WhisperModel(model_name, device="cpu", compute_type="int8")
+    checkpoint()
     segments, info = model.transcribe(str(video), beam_size=5, vad_filter=True,
                                       word_timestamps=True)
     transcript = []
     for segment in segments:
+        checkpoint()
         words = [{"start": round(word.start, 3), "end": round(word.end, 3),
                   "text": word.word.strip()}
                  for word in (segment.words or []) if word.start is not None and word.end is not None]
@@ -307,6 +316,9 @@ def render_clip(video, start, end, target, captions=None, face_tracking=True):
     require_binary("ffmpeg")
     vf = _portrait_filter(video, start, end, face_tracking)
     if captions:
+        filters = run_command(["ffmpeg", "-hide_banner", "-filters"])
+        if not re.search(r"\bass\s+V->V", filters):
+            raise RuntimeError("FFmpeg needs the ass/libass subtitle filter to burn captions; install an FFmpeg build with libass")
         vf += f",ass='{_filter_path(captions)}'"
     run_command(["ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-ss", str(start),
                  "-i", str(video), "-t", str(end-start), "-vf", vf,
@@ -317,6 +329,7 @@ def render_clip(video, start, end, target, captions=None, face_tracking=True):
 def process(source, output_dir="output", count=3, min_duration=20, max_duration=60,
             allow_download=False, model_name=None, use_ai=True, face_tracking=True,
             candidate_plan=None, candidate_ids=None):
+    checkpoint("validating", 2)
     from .discovery import validate_options, load_selection
     validate_options(count, min_duration, max_duration, "auto")
     if bool(candidate_plan) != bool(candidate_ids):
@@ -343,6 +356,7 @@ def process(source, output_dir="output", count=3, min_duration=20, max_duration=
         segments, language = transcribe(video, model_name or os.getenv("WHISPER_MODEL", "base"))
         if not segments:
             raise RuntimeError("No speech detected in source video")
+        checkpoint("selecting", 40)
         if selected is not None:
             clips, method = selected, "reviewed-candidates"
         elif use_ai:
@@ -357,6 +371,7 @@ def process(source, output_dir="output", count=3, min_duration=20, max_duration=
             method = "offline"
         results = []
         for index, clip in enumerate(clips, 1):
+            checkpoint(f"rendering clip {index}/{len(clips)}", 50 + 45 * (index - 1) / len(clips))
             stem = f"clip_{index:02d}"
             mp4 = output / f"{stem}.mp4"
             srt = output / f"{stem}.srt"
@@ -368,5 +383,6 @@ def process(source, output_dir="output", count=3, min_duration=20, max_duration=
         manifest = {"source": source, "language": language, "selection_method": method,
                     "face_tracking": face_tracking, "captions_burned_in": True,
                     "clips": results, "note": "TikTok-style captions are burned into MP4; SRT is also provided separately."}
+        checkpoint("writing manifest", 98)
         (output / "manifest.json").write_text(json.dumps(manifest, indent=2, ensure_ascii=False), encoding="utf-8")
         return manifest

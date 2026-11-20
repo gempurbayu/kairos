@@ -1,5 +1,4 @@
 """Reviewable, category-aware candidate discovery for local videos."""
-import hashlib
 import json
 import math
 import os
@@ -8,6 +7,8 @@ import subprocess
 from pathlib import Path
 
 from .pipeline import ai_highlights, select_nonoverlap, transcribe
+from .runtime import checkpoint, run_capture
+from .cache import media_hash
 
 MODES = ("auto", "conversation", "instruction", "gaming")
 CUES = {
@@ -28,11 +29,7 @@ def validate_options(count, minimum, maximum, mode):
 
 def fingerprint(video):
     """Hash media bytes so plans cannot silently target changed videos."""
-    digest = hashlib.sha256()
-    with Path(video).open("rb") as stream:
-        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
+    return media_hash(video)
 
 
 def choose_mode(segments, mode):
@@ -49,10 +46,10 @@ def media_signals(video, start, end, frames_dir, candidate_id):
     audio = None
     motion = None
     try:
-        result = subprocess.run(
+        result = run_capture(
             ["ffmpeg", "-hide_banner", "-nostats", "-ss", str(start), "-i", str(video),
              "-t", str(end - start), "-vn", "-af", "volumedetect", "-f", "null", "-"],
-            capture_output=True, text=True, timeout=120)
+            timeout=120)
         mean = re.search(r"mean_volume: (-?[\d.]+) dB", result.stderr)
         peak = re.search(r"max_volume: (-?[\d.]+) dB", result.stderr)
         if result.returncode == 0 and mean and peak:
@@ -68,6 +65,7 @@ def media_signals(video, start, end, frames_dir, candidate_id):
         samples = []
         try:
             for index, fraction in enumerate((0.15, 0.5, 0.85), 1):
+                checkpoint()
                 capture.set(cv2.CAP_PROP_POS_MSEC, (start + (end - start) * fraction) * 1000)
                 ok, frame = capture.read()
                 if not ok:
@@ -96,6 +94,7 @@ def rank_candidates(segments, count, minimum, maximum, mode, goal=""):
     candidates = []
     goal_words = set(re.findall(r"\w+", goal.lower()))
     for index, segment in enumerate(segments):
+        checkpoint()
         texts = []
         for part in segments[index:]:
             duration = part["end"] - segment["start"]
@@ -126,6 +125,7 @@ def rank_candidates(segments, count, minimum, maximum, mode, goal=""):
 def discover_candidates(source, output_dir="candidates", count=5, min_duration=20,
                         max_duration=60, mode="auto", goal="", use_ai=False, model=None,
                         analyze_media=True):
+    checkpoint("validating", 2)
     validate_options(count, min_duration, max_duration, mode)
     video = Path(source).expanduser().resolve()
     if not video.is_file():
@@ -136,6 +136,7 @@ def discover_candidates(source, output_dir="candidates", count=5, min_duration=2
     import tempfile
     folder = Path(tempfile.mkdtemp(prefix="review-", dir=output))
     segments, language = transcribe(video, model or os.getenv("WHISPER_MODEL", "base"))
+    checkpoint("ranking candidates", 40)
     resolved_mode = choose_mode(segments, mode)
     clips = rank_candidates(segments, count, min_duration, max_duration, resolved_mode, goal)
     method = "offline"
@@ -161,6 +162,7 @@ def discover_candidates(source, output_dir="candidates", count=5, min_duration=2
             method = "offline-fallback"
             warnings.append("AI selection unavailable; used offline scoring")
     for index, clip in enumerate(clips, 1):
+        checkpoint(f"sampling candidate {index}/{len(clips)}", 50 + 40 * (index - 1) / len(clips))
         clip["id"] = f"candidate_{index:02d}"
         audio, visual, evidence, issues, thumbs = (media_signals(video, clip["start"], clip["end"], folder, clip["id"])
                                                  if analyze_media else (None, None, [], [], []))
@@ -175,6 +177,7 @@ def discover_candidates(source, output_dir="candidates", count=5, min_duration=2
             "language": language, "mode": resolved_mode, "requested_mode": mode, "goal": goal,
             "method": method, "warnings": warnings, "clips": clips,
             "note": "Editorial signals, not calibrated probabilities or virality predictions. Review before rendering."}
+    checkpoint("writing preview", 98)
     path = folder / "candidates.json"
     path.write_text(json.dumps(plan, ensure_ascii=False, indent=2), encoding="utf-8")
     return {**plan, "plan_path": str(path)}

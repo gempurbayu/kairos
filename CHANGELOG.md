@@ -6,6 +6,10 @@ Notable changes to Kairos are recorded here. This changelog follows [Keep a Chan
 
 ### Added
 
+- Content-addressed local transcript caching shared across discovery and rendering, with model/configuration invalidation and atomic writes.
+- Session-scoped MCP background jobs with a bounded queue, phase progress, cancellation, isolated outputs, and persisted result files.
+- Synthetic FFmpeg/MCP integration tests and an interval-based candidate evaluation script for human-marked video moments.
+
 - Reviewable local candidate discovery with conversation, instruction, auto, and experimental commented-gaming modes.
 - Editorial goals, component scores, heuristic confidence, transcript excerpts, audio dynamics, sampled frame changes, and thumbnail previews.
 - CLI discovery and candidate selection, plus the `discover_clip_candidates` MCP tool.

@@ -176,11 +176,38 @@ Discovery writes a new review folder containing `candidates.json` and up to thre
 kairos ./video.mp4 --candidate-plan ./candidates/review-EXAMPLE/candidates.json --select candidate_01 candidate_03 --output ./output/reviewed
 ```
 
-Replace `review-EXAMPLE` with the actual review folder. A SHA-256 fingerprint checks that the plan targets the same video. Rendering re-transcribes the video to produce captions; transcript caching and background jobs are not implemented yet.
+Replace `review-EXAMPLE` with the actual review folder. A SHA-256 fingerprint checks that the plan targets the same video. Rendering reuses the transcript cache when the video bytes, model, engine version, and transcription settings match.
 
 Modes are `auto`, `conversation`, `instruction`, and experimental `gaming`. Auto mode uses transcript keywords and can be overridden. Offline scoring recognizes English and some Indonesian cues. Use `--goal` to favor matching transcript terms; optional Gemini selection also receives the mode and goal. Candidate scores include hook, context, pacing, goal relevance, audio dynamics, and sampled frame changes. Confidence labels are heuristic, not calibrated probabilities. Audio/frame signals are sampled only for the transcript shortlist, so silent action footage is not supported. Gaming does not recognize specific events or HUD information. Use `--no-media-analysis` to skip audio/frame sampling.
 
 For MCP, call `discover_clip_candidates`, review the response, and pass `plan_path` as `candidate_plan` plus the chosen `candidate_ids` to `generate_clips`. Existing `find_highlights` and direct rendering remain available.
+
+## Background jobs and transcript cache (v0.3 development)
+
+For long-running MCP work, start a job instead of holding one tool call open:
+
+```json
+{
+  "kind": "discover",
+  "options": {
+    "source": "/absolute/path/to/video.mp4",
+    "count": 5,
+    "mode": "instruction",
+    "goal": "useful tips",
+    "use_ai": false
+  }
+}
+```
+
+Call `start_clip_job` with that object, then `get_clip_job` with the returned `job_id`. Status reports `queued`, `running`, `completed`, `failed`, or `cancelled`, an estimated phase progress from 0 to 100, and the completed result. Use `include_result: false` for lightweight status checks. After review, start a `render` job with `source`, `candidate_plan`, and `candidate_ids` inside `options`. Job options use Python pipeline parameter names (`source`, not `path`).
+
+Each job has its own output folder. One job runs at a time, with at most eight active/queued jobs per server session. `cancel_clip_job` requests cancellation; poll until terminal status. FFmpeg subprocesses are terminated and reaped. Whisper model loading/inference and network calls may finish their current operation before cancellation is observed. Partial output can remain in the job folder and is not a completed result.
+
+Jobs belong to the running MCP server session; restart recovery and resume are not supported. Status snapshots and results are written under `~/.cache/kairos/jobs` (override with `KAIROS_JOBS_DIR`). Old job files are not automatically removed.
+
+Transcripts are cached locally under `~/.cache/kairos/transcripts`. Set `KAIROS_CACHE_DIR` to choose another cache root or `KAIROS_DISABLE_CACHE=1` to bypass caching. Cache files contain speech text and timestamps; keep them private and delete the directory to clear them. Cache corruption or an unwritable cache falls back to transcription. Different video bytes or models create separate entries. No models, transcript cache files, or user media are committed to this repository.
+
+See [`docs/EVALUATION.md`](docs/EVALUATION.md) for the synthetic integration checks and the procedure for evaluating candidate quality on authorized real videos.
 
 ## Configuration
 

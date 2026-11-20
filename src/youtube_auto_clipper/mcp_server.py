@@ -1,5 +1,6 @@
 """MCP stdio entry point shared by Codex, Hermes, OpenClaw, and other clients."""
 import json
+import threading
 from pathlib import Path
 
 from mcp.server.fastmcp import FastMCP
@@ -9,6 +10,50 @@ from .pipeline import ai_highlights, fallback_highlights, process, transcribe
 
 
 mcp = FastMCP("kairos")
+_job_manager = None
+_job_lock = threading.Lock()
+
+
+def job_manager():
+    global _job_manager
+    with _job_lock:
+        if _job_manager is None:
+            from .jobs import JobManager
+            _job_manager = JobManager()
+    return _job_manager
+
+
+@mcp.tool()
+def start_clip_job(kind: str, options: dict) -> str:
+    """Start a background discover or render job; returns a job ID immediately.
+
+    Options use the shared Python pipeline names: discover requires source; render
+    requires source and optionally candidate_plan/candidate_ids. Output is isolated
+    per job. Use get_clip_job and cancel_clip_job in this same server session.
+    """
+    return json.dumps(job_manager().submit(kind, options), ensure_ascii=False)
+
+
+@mcp.tool()
+def get_clip_job(job_id: str, include_result: bool = True) -> str:
+    """Return queued/running/completed/failed/cancelled status and phase progress.
+
+    Progress is an estimate by phase, not an ETA. Completed jobs include result_path.
+    """
+    status = job_manager().status(job_id)
+    if include_result and status["status"] == "completed":
+        status["result"] = json.loads(Path(status["result_path"]).read_text(encoding="utf-8"))
+    return json.dumps(status, ensure_ascii=False)
+
+
+@mcp.tool()
+def cancel_clip_job(job_id: str) -> str:
+    """Request cooperative cancellation; poll status until cancelled or completed.
+
+    FFmpeg is terminated promptly. Model loading, inference and network calls may
+    finish their current operation before cancellation is observed.
+    """
+    return json.dumps(job_manager().cancel(job_id), ensure_ascii=False)
 
 
 @mcp.tool()
@@ -75,7 +120,11 @@ def generate_clips(source: str, output_dir: str = "output", count: int = 3,
 
 def main():
     """Run this MCP server over stdio for a local agent harness."""
-    mcp.run(transport="stdio")
+    try:
+        mcp.run(transport="stdio")
+    finally:
+        if _job_manager is not None:
+            _job_manager.close()
 
 
 if __name__ == "__main__":
