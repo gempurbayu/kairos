@@ -258,14 +258,21 @@ def _face_crop_points(video, start, end, scaled_width, scaled_height):
         import cv2
     except ImportError:
         return []
-    capture = cv2.VideoCapture(str(video))
-    if not capture.isOpened():
+    if not hasattr(cv2, "CascadeClassifier") or not getattr(getattr(cv2, "data", None), "haarcascades", None):
+        print("Warning: OpenCV cascade detection is unavailable; using a centered crop", file=sys.stderr, flush=True)
         return []
-    cascade = cv2.CascadeClassifier(cv2.data.haarcascades + "haarcascade_frontalface_default.xml")
+    capture = cv2.VideoCapture(str(video))
     points = []
     try:
+        if not capture.isOpened():
+            return []
+        cascade = cv2.CascadeClassifier(cv2.data.haarcascades + "haarcascade_frontalface_default.xml")
+        if cascade.empty():
+            print("Warning: Face detector data is unavailable; using a centered crop", file=sys.stderr, flush=True)
+            return []
         duration = end - start
         for relative in [*map(float, range(0, max(1, math.ceil(duration)), 2)), duration]:
+            checkpoint()
             if relative > duration:
                 continue
             capture.set(cv2.CAP_PROP_POS_MSEC, (start + relative) * 1000)
@@ -278,6 +285,9 @@ def _face_crop_points(video, start, end, scaled_width, scaled_height):
                 x, y, width, height = max(faces, key=lambda rect: rect[2] * rect[3])
                 points.append((relative, (x + width / 2) * scaled_width / frame.shape[1],
                                (y + height / 2) * scaled_height / frame.shape[0]))
+    except cv2.error:
+        print("Warning: Face detection failed; using a centered crop", file=sys.stderr, flush=True)
+        return []
     finally:
         capture.release()
     return points

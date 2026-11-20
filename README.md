@@ -18,6 +18,8 @@ Kairos can run from the command line or expose the same workflow as an MCP serve
 - One shared `kairos-mcp` entry point for MCP clients, with global-install and direct-from-PyPI options.
 - A portable Agent Skill in [`skills/kairos/SKILL.md`](skills/kairos/SKILL.md).
 
+Version `0.3.1` fixes a face-tracking failure on fresh installations that selected OpenCV 5. Upgrade from `0.3.0` before using face-tracked portrait rendering.
+
 ## Requirements
 
 - Python 3.10 or newer.

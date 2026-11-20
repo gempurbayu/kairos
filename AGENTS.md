@@ -16,6 +16,7 @@ These instructions apply to the whole repository. Follow them for bug fixes, ref
 - `pipeline.py` owns transcription, highlight selection, cropping, caption generation, and rendering. Keep the CLI and MCP server as thin interfaces over the shared pipeline.
 - Preserve local/offline processing when adding optional AI services. A missing API key or remote-service failure must not make the basic local workflow unusable.
 - Keep generated MP4, SRT, and manifest outputs compatible unless a change explicitly updates and documents the output contract.
+- Face tracking depends on the OpenCV 4.x CascadeClassifier API. Keep its dependency bound until a deliberate detector migration is implemented and tested on the real portrait-render path.
 - Add dependencies only when the feature needs them; document external requirements such as FFmpeg and ffprobe.
 
 ## Video rights and security

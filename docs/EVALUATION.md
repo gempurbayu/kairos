@@ -49,3 +49,7 @@ Follow-up evaluation should cover actual gameplay intervals, goals in the transc
 Re-running the same cached transcript with the same English goal produced five candidates labeled as conversation, with mismatch warnings for the requested gaming mode. Common reaction concepts matched in all five, where literal matching previously yielded zero goal matches. This is evidence that bilingual concept matching and mismatch reporting execute; it is not a measured improvement in highlight quality. ASR wording errors and context dependence remain visible and still require manual review.
 
 Authored English/Indonesian regression examples test question/answer grouping, fragment merging, unpunctuated fallback, repetition/CTA suppression, mixed-content penalties, ambiguous workplace/game terms, and AI range alignment/deduplication. These synthetic expectations do not substitute for human annotations on varied real sources.
+
+## Clean-install regression found after 0.3.0
+
+Testing the actual PyPI wheel in an isolated environment exposed a portrait face-tracking failure: the unconstrained OpenCV dependency resolved to version 5, which no longer provides `CascadeClassifier`. Existing fit-layout and mocked-inference checks did not cover that API dependency. Version 0.3.1 bounds OpenCV below 5 and adds detector availability, detector/fallback lifecycle, and real FFmpeg moving-crop regressions. Private real-source verification also exercises an actual detected face; user media remains outside Git.

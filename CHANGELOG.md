@@ -4,6 +4,14 @@ Notable changes to Kairos are recorded here. This changelog follows [Keep a Chan
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-11-21
+
+### Fixed
+
+- Constrained OpenCV to the compatible 4.x API; OpenCV 5 removes the CascadeClassifier used by face tracking.
+- Face detection now falls back to a centered crop if detector APIs/data are unavailable, reports the issue on stderr, and always releases its capture handle.
+- Added detector/fallback and moving-crop rendering regressions after a clean PyPI installation exposed the missing face-tracking coverage.
+
 ## [0.3.0] - 2026-11-21
 
 ### Added
@@ -80,7 +88,8 @@ Notable changes to Kairos are recorded here. This changelog follows [Keep a Chan
 - Offline highlight scoring, portrait clip rendering, face tracking, karaoke captions, SRT subtitles, and a JSON manifest.
 - CLI and MCP server entry points, a portable Agent Skill, and initial GitHub Actions CI.
 
-[Unreleased]: https://github.com/gempurbayu/kairos/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/gempurbayu/kairos/compare/v0.3.1...HEAD
+[0.3.1]: https://github.com/gempurbayu/kairos/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/gempurbayu/kairos/compare/v0.2.4...v0.3.0
 [0.2.4]: https://github.com/gempurbayu/kairos/compare/v0.2.3...v0.2.4
 [0.2.3]: https://github.com/gempurbayu/kairos/compare/v0.2.2...v0.2.3
