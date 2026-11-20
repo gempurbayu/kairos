@@ -1,0 +1,14 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+[project]
+name = "youtube-auto-clipper"
+version = "0.2.0"
+description = "AI-assisted short-form video clipping with face tracking, captions, MCP, and agent skill"
+requires-python = ">=3.10"
+dependencies = ["faster-whisper>=1.0", "yt-dlp>=2024.1", "mcp>=1.0", "google-genai>=1.0", "python-dotenv>=1.0", "opencv-python-headless>=4.9"]
+[project.scripts]
+youtube-clipper = "youtube_auto_clipper.cli:main"
+youtube-clipper-mcp = "youtube_auto_clipper.mcp_server:main"
+[tool.setuptools.packages.find]
+where = ["src"]
