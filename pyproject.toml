@@ -3,7 +3,7 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 [project]
 name = "kairos-video-clipper"
-version = "0.2.2"
+version = "0.2.3"
 description = "Kairos: AI-assisted short-form video clipping with face tracking, captions, MCP, and agent skill"
 readme = {file = "README.md", content-type = "text/markdown"}
 requires-python = ">=3.10"

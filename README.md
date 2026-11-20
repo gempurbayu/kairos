@@ -15,7 +15,7 @@ Kairos can run from the command line or expose the same workflow as an MCP serve
 - Portrait 9:16 rendering with FFmpeg and optional OpenCV face tracking.
 - TikTok-style karaoke captions burned into each MP4, plus an editable SRT file.
 - A JSON manifest containing selected timestamps, titles, scores, and output paths.
-- One shared `kairos-mcp` entry point for MCP clients, with global-install and direct-from-Git options.
+- One shared `kairos-mcp` entry point for MCP clients, with global-install and direct-from-PyPI options.
 - A portable Agent Skill in [`skills/kairos/SKILL.md`](skills/kairos/SKILL.md).
 
 ## Requirements
@@ -102,14 +102,14 @@ Install FFmpeg and [uv](https://docs.astral.sh/uv/getting-started/installation/)
 
 Every MCP-compatible harness can then launch the same command, `kairos-mcp`; no per-harness virtual-environment path is needed. Register the server once in each harness using the examples in [`docs/INTEGRATIONS.md`](docs/INTEGRATIONS.md). The existing `youtube-clipper` and `youtube-clipper-mcp` command names remain available as compatibility aliases.
 
-To skip the global installation, configure the harness to launch the pinned release with `uvx`. For example, in Codex CLI:
+To skip the global installation, configure the harness to launch Kairos from PyPI with `uvx`. For example, in Codex CLI:
 
 ```bash
 codex mcp add kairos -- \
-  uvx --from git+https://github.com/gempurbayu/kairos.git@v0.2.2 kairos-mcp
+  uvx --from kairos-video-clipper kairos-mcp
 ```
 
-The Codex desktop config, Hermes, and OpenClaw examples are in [`docs/INTEGRATIONS.md`](docs/INTEGRATIONS.md). The first `uvx` launch downloads and prepares dependencies; later launches use uv's cache. Install FFmpeg on the machine running Kairos. Direct `uvx` installs use offline highlight selection unless `GEMINI_API_KEY` is available in the server process environment.
+The Codex desktop config, Hermes, and OpenClaw examples are in [`docs/INTEGRATIONS.md`](docs/INTEGRATIONS.md). The first `uvx` launch downloads and prepares dependencies; later launches use uv's cache. Install FFmpeg on the machine running Kairos. Direct `uvx` installs use offline highlight selection unless `GEMINI_API_KEY` is available in the server process environment. These PyPI commands work after version `0.2.3` finishes publishing.
 
 The MCP server provides these tools:
 
@@ -153,7 +153,7 @@ The skill provides agent instructions; the MCP installation provides the executa
 
 ## Install from PyPI
 
-After the first package release is published, install Kairos with:
+Install Kairos from PyPI:
 
 ```bash
 uv tool install kairos-video-clipper
@@ -208,7 +208,7 @@ GitHub Actions runs the test suite on Python 3.10, 3.11, and 3.12 for pushes and
 
 Pushing a version tag such as `v0.2.3` runs tests, builds the distributions, checks that the tag matches `pyproject.toml`, and publishes them to PyPI through GitHub Actions. The publisher uses PyPI Trusted Publishing (OIDC), so no PyPI API token is stored in GitHub.
 
-Before the first release, configure a [pending PyPI Trusted Publisher](https://docs.pypi.org/trusted-publishers/creating-a-project-through-oidc/) with owner `gempurbayu`, repository `kairos`, workflow `publish.yml`, and environment `pypi`. The tag must match the package version exactly. Tag `v0.2.2` predates this workflow; the next version tag will be the first one eligible for automatic publishing.
+The first automatic publication is version `0.2.3`. A [pending PyPI Trusted Publisher](https://docs.pypi.org/trusted-publishers/creating-a-project-through-oidc/) must be configured with owner `gempurbayu`, repository `kairos`, workflow `publish.yml`, and environment `pypi`. The release tag must match the package version exactly.
 
 ## License
 

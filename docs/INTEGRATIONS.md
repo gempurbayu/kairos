@@ -25,7 +25,7 @@ If the harness cannot resolve `kairos-mcp`, run `uv tool update-shell`, reopen t
 
 ## Install directly from a harness
 
-Until the first PyPI release, these examples use `uvx` to fetch Kairos v0.2.2 from GitHub and create its tool environment on first launch. After the package is published, you can replace the Git source with the shorter PyPI package source `kairos-video-clipper`. Install [uv](https://docs.astral.sh/uv/getting-started/installation/) first, and make sure `uvx` is on `PATH`. The first launch needs internet access and may take longer while Python dependencies are installed; later launches use uv's cache. FFmpeg must also be installed on the machine running the server.
+These examples use `uvx` to fetch Kairos from PyPI and create its tool environment on first launch. They work once version `0.2.3` finishes publishing. Install [uv](https://docs.astral.sh/uv/getting-started/installation/) first, and make sure `uvx` is on `PATH`. The first launch needs internet access and may take longer while Python dependencies are installed; later launches use uv's cache. FFmpeg must also be installed on the machine running the server.
 
 Without `GEMINI_API_KEY` in the server process environment, Kairos still works and selects highlights offline. To use Gemini with a direct `uvx` configuration, pass the key through the harness's local MCP environment settings. Do not put real keys in repository files.
 
@@ -35,7 +35,7 @@ With Codex CLI, run:
 
 ```bash
 codex mcp add kairos -- \
-  uvx --from git+https://github.com/gempurbayu/kairos.git@v0.2.2 kairos-mcp
+  uvx --from kairos-video-clipper kairos-mcp
 ```
 
 Or add this to `~/.codex/config.toml`:
@@ -45,7 +45,7 @@ Or add this to `~/.codex/config.toml`:
 command = "uvx"
 args = [
   "--from",
-  "git+https://github.com/gempurbayu/kairos.git@v0.2.2",
+  "kairos-video-clipper",
   "kairos-mcp",
 ]
 ```
@@ -62,7 +62,7 @@ mcp_servers:
     command: "uvx"
     args:
       - "--from"
-      - "git+https://github.com/gempurbayu/kairos.git@v0.2.2"
+      - "kairos-video-clipper"
       - "kairos-mcp"
     timeout: 3600
 ```
@@ -74,7 +74,7 @@ Restart Hermes. The tools should appear under the `mcp-kairos` toolset.
 In Control UI → Settings → MCP, add a **Stdio** server with command `uvx` and arguments:
 
 ```text
---from git+https://github.com/gempurbayu/kairos.git@v0.2.2 kairos-mcp
+--from kairos-video-clipper kairos-mcp
 ```
 
 For JSON5 configuration, use:
@@ -87,7 +87,7 @@ For JSON5 configuration, use:
         command: "uvx",
         args: [
           "--from",
-          "git+https://github.com/gempurbayu/kairos.git@v0.2.2",
+          "kairos-video-clipper",
           "kairos-mcp",
         ],
         enabled: true,
@@ -104,16 +104,10 @@ Check the connection with `openclaw mcp status` or `openclaw mcp doctor kairos -
 For a reusable global installation, install the pinned release once:
 
 ```bash
-uv tool install git+https://github.com/gempurbayu/kairos.git@v0.2.2
+uv tool install kairos-video-clipper
 ```
 
 Then use the shorter `kairos-mcp` command in each harness configuration. This avoids resolving and preparing the package on each harness's first launch.
-
-After the first PyPI release, use this shorter install command:
-
-```bash
-uv tool install kairos-video-clipper
-```
 
 For direct harness launch from PyPI, set command `uvx` with arguments `--from`, `kairos-video-clipper`, and `kairos-mcp`.
 
@@ -179,7 +173,7 @@ Verify the connection with `openclaw mcp status` or `openclaw mcp doctor kairos 
 
 ## Other MCP clients
 
-Choose **stdio/local command** as the transport and use `kairos-mcp` after installing Kairos globally. For a direct Git-based launch, use command `uvx` with arguments `--from`, `git+https://github.com/gempurbayu/kairos.git@v0.2.2`, and `kairos-mcp`. The server provides `transcribe_local_video`, `find_highlights`, and `generate_clips` tools. YouTube downloads stay disabled unless the caller explicitly sets `allow_download: true`.
+Choose **stdio/local command** as the transport and use `kairos-mcp` after installing Kairos globally. For a direct launch, use command `uvx` with arguments `--from`, `kairos-video-clipper`, and `kairos-mcp`. The server provides `transcribe_local_video`, `find_highlights`, and `generate_clips` tools. YouTube downloads stay disabled unless the caller explicitly sets `allow_download: true`.
 
 ## Install the skill in multiple agents
 
@@ -204,4 +198,4 @@ For the first publication, configure a [pending publisher in PyPI](https://docs.
 - Workflow: `publish.yml`
 - GitHub environment: `pypi`
 
-For each release, update the project version, commit the change, create the matching tag (for example, `v0.2.3`), then push the commit and tag. Publishing starts after the release tests pass.
+For each release, update the project version, commit the change, create the matching tag (for example, `v0.2.4`), then push the commit and tag. Publishing starts after the release tests pass. Version `0.2.3` is the first release using this workflow.
