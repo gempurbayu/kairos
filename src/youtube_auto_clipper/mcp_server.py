@@ -7,7 +7,7 @@ from mcp.server.fastmcp import FastMCP
 from .pipeline import ai_highlights, fallback_highlights, process, transcribe
 
 
-mcp = FastMCP("youtube-auto-clipper")
+mcp = FastMCP("kairos")
 
 
 @mcp.tool()

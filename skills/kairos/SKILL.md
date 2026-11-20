@@ -1,9 +1,9 @@
 ---
-name: youtube-clipper
+name: kairos
 description: Turn authorized long-form videos into portrait clips with face tracking and TikTok-style captions using local Whisper, Gemini highlight analysis, and FFmpeg via MCP.
 ---
 
-# YouTube Auto Clipper
+# Kairos
 
 Use this skill when asked to identify and render highlights from long-form videos.
 

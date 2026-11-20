@@ -1,6 +1,10 @@
 .env
+.env.*
+!.env.example
 .venv/
 __pycache__/
 .pytest_cache/
 output/
 *.egg-info/
+build/
+dist/
