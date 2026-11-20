@@ -15,7 +15,7 @@ Kairos can run from the command line or expose the same workflow as an MCP serve
 - Portrait 9:16 rendering with FFmpeg and optional OpenCV face tracking.
 - TikTok-style karaoke captions burned into each MP4, plus an editable SRT file.
 - A JSON manifest containing selected timestamps, titles, scores, and output paths.
-- One globally installed `kairos-mcp` command shared by MCP clients.
+- One shared `kairos-mcp` entry point for MCP clients, with global-install and direct-from-Git options.
 - A portable Agent Skill in [`skills/kairos/SKILL.md`](skills/kairos/SKILL.md).
 
 ## Requirements
@@ -102,6 +102,15 @@ Install FFmpeg and [uv](https://docs.astral.sh/uv/getting-started/installation/)
 
 Every MCP-compatible harness can then launch the same command, `kairos-mcp`; no per-harness virtual-environment path is needed. Register the server once in each harness using the examples in [`docs/INTEGRATIONS.md`](docs/INTEGRATIONS.md). The existing `youtube-clipper` and `youtube-clipper-mcp` command names remain available as compatibility aliases.
 
+To skip the global installation, configure the harness to launch the pinned release with `uvx`. For example, in Codex CLI:
+
+```bash
+codex mcp add kairos -- \
+  uvx --from git+https://github.com/gempurbayu/kairos.git@v0.2.2 kairos-mcp
+```
+
+The Codex desktop config, Hermes, and OpenClaw examples are in [`docs/INTEGRATIONS.md`](docs/INTEGRATIONS.md). The first `uvx` launch downloads and prepares dependencies; later launches use uv's cache. Install FFmpeg on the machine running Kairos. Direct `uvx` installs use offline highlight selection unless `GEMINI_API_KEY` is available in the server process environment.
+
 The MCP server provides these tools:
 
 | Tool | Purpose |
@@ -112,9 +121,29 @@ The MCP server provides these tools:
 
 YouTube downloads remain disabled unless a caller explicitly sets `allow_download: true`. Confirm that the user has the rights to use the source video before enabling downloads.
 
+### Example request in an agent chat
+
+After connecting Kairos, ask the agent:
+
+> Create three portrait clips from `/absolute/path/to/podcast.mp4`. Make each 20–45 seconds, use offline highlight selection and face tracking, and save the MP4s, SRT files, and manifest to `/absolute/path/to/kairos-output`. Summarize the selected timestamps when finished.
+
+This calls `generate_clips` with arguments like:
+
+```json
+{
+  "source": "/absolute/path/to/podcast.mp4",
+  "output_dir": "/absolute/path/to/kairos-output",
+  "count": 3,
+  "min_duration": 20,
+  "max_duration": 45,
+  "use_ai": false,
+  "face_tracking": true
+}
+```
+
 ### Install the Agent Skill
 
-After the repository is public, install the portable skill into a supported agent with the [Vercel Skills CLI](https://skills.sh/):
+Install the portable skill into a supported agent with the [Vercel Skills CLI](https://skills.sh/):
 
 ```bash
 npx skills add gempurbayu/kairos --skill kairos -g

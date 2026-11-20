@@ -1,6 +1,6 @@
 # Kairos agent harness integrations
 
-Kairos exposes one local MCP server over stdio. Install it once as a global CLI, then every MCP-compatible harness can launch the same command name: `kairos-mcp`. This avoids per-harness virtual-environment paths. Each harness still needs a server registration because its configuration format is different.
+Kairos exposes one local MCP server over stdio. You can install it once as a global CLI and use `kairos-mcp` in every harness, or let a harness launch the pinned GitHub release with `uvx` on first use. Both approaches avoid per-harness virtual-environment paths. Each harness still needs a server registration because its configuration format is different.
 
 ## 1. Install
 
@@ -22,6 +22,92 @@ Set-ExecutionPolicy -Scope Process Bypass
 The setup installs this project as an editable uv tool, so source updates remain visible to the installed command. The default works without API keys and uses local transcription plus offline highlight scoring. For Gemini selection, add `GEMINI_API_KEY=...` to the project's `.env` file. Never commit `.env`.
 
 If the harness cannot resolve `kairos-mcp`, run `uv tool update-shell`, reopen the harness, and try again. Use an absolute executable path only for a harness that does not inherit the user's PATH.
+
+## Install directly from a harness
+
+These examples use `uvx` to fetch Kairos v0.2.2 from GitHub and create its tool environment on first launch. Install [uv](https://docs.astral.sh/uv/getting-started/installation/) first, and make sure `uvx` is on `PATH`. The first launch needs internet access and may take longer while Python dependencies are installed; later launches use uv's cache. FFmpeg must also be installed on the machine running the server.
+
+Without `GEMINI_API_KEY` in the server process environment, Kairos still works and selects highlights offline. To use Gemini with a direct `uvx` configuration, pass the key through the harness's local MCP environment settings. Do not put real keys in repository files.
+
+### Codex
+
+With Codex CLI, run:
+
+```bash
+codex mcp add kairos -- \
+  uvx --from git+https://github.com/gempurbayu/kairos.git@v0.2.2 kairos-mcp
+```
+
+Or add this to `~/.codex/config.toml`:
+
+```toml
+[mcp_servers.kairos]
+command = "uvx"
+args = [
+  "--from",
+  "git+https://github.com/gempurbayu/kairos.git@v0.2.2",
+  "kairos-mcp",
+]
+```
+
+Reload Codex and check `/mcp` or `codex mcp list`.
+
+### Hermes Agent
+
+Add this to `~/.hermes/config.yaml`:
+
+```yaml
+mcp_servers:
+  kairos:
+    command: "uvx"
+    args:
+      - "--from"
+      - "git+https://github.com/gempurbayu/kairos.git@v0.2.2"
+      - "kairos-mcp"
+    timeout: 3600
+```
+
+Restart Hermes. The tools should appear under the `mcp-kairos` toolset.
+
+### OpenClaw
+
+In Control UI → Settings → MCP, add a **Stdio** server with command `uvx` and arguments:
+
+```text
+--from git+https://github.com/gempurbayu/kairos.git@v0.2.2 kairos-mcp
+```
+
+For JSON5 configuration, use:
+
+```json5
+{
+  mcp: {
+    servers: {
+      kairos: {
+        command: "uvx",
+        args: [
+          "--from",
+          "git+https://github.com/gempurbayu/kairos.git@v0.2.2",
+          "kairos-mcp",
+        ],
+        enabled: true,
+      },
+    },
+  },
+}
+```
+
+Check the connection with `openclaw mcp status` or `openclaw mcp doctor kairos --probe`.
+
+## Install once, then connect
+
+For a reusable global installation, install the pinned release once:
+
+```bash
+uv tool install git+https://github.com/gempurbayu/kairos.git@v0.2.2
+```
+
+Then use the shorter `kairos-mcp` command in each harness configuration. This avoids resolving and preparing the package on each harness's first launch.
 
 ## Codex
 
@@ -77,24 +163,16 @@ Verify the connection with `openclaw mcp status` or `openclaw mcp doctor kairos 
 
 ## Other MCP clients
 
-Choose **stdio/local command** as the transport and use `kairos-mcp`. The server provides `transcribe_local_video`, `find_highlights`, and `generate_clips` tools. YouTube downloads stay disabled unless the caller explicitly sets `allow_download: true`.
+Choose **stdio/local command** as the transport and use `kairos-mcp` after installing Kairos globally. For a direct Git-based launch, use command `uvx` with arguments `--from`, `git+https://github.com/gempurbayu/kairos.git@v0.2.2`, and `kairos-mcp`. The server provides `transcribe_local_video`, `find_highlights`, and `generate_clips` tools. YouTube downloads stay disabled unless the caller explicitly sets `allow_download: true`.
 
 ## Install the skill in multiple agents
 
 The repo's `SKILL.md` follows the portable Agent Skills format. Users can install the skill into compatible agents with the Vercel Skills CLI, which detects supported agents and links one canonical skill copy:
 
 ```bash
-npx skills add <owner>/<repo> --skill kairos -g
+npx skills add gempurbayu/kairos --skill kairos -g
 ```
 
 This installs agent instructions; the MCP CLI install above provides the actual tools.
-
-## Install a tagged release from GitHub
-
-Install the tagged release without downloading the repository manually:
-
-```bash
-uv tool install git+https://github.com/gempurbayu/kairos.git@v0.2.2
-```
 
 The harness command remains `kairos-mcp` after this install. When the package is published to PyPI, this can become `uv tool install kairos-video-clipper`.
