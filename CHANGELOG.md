@@ -6,6 +6,9 @@ Notable changes to Kairos are recorded here. This changelog follows [Keep a Chan
 
 ### Added
 
+- TikTok/Reels/Shorts vertical export presets and auto/720p/1080p output choices across CLI, MCP, jobs, and review UI.
+- Export settings in output manifests and explicit H.264/yuv420p output encoding.
+
 - Local browser review studio with candidate playback, timestamp edits, selection, render progress/cancel, and MP4/SRT links.
 - Full-frame portrait padding and landscape layout presets alongside face-tracked portrait cropping.
 - Explicitly authorized YouTube discovery downloads retained alongside their review plan.

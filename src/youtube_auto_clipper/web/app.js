@@ -42,16 +42,30 @@ $('render').onclick=async()=>{
   const clips=selected(); if(!clips.length) return error('Select at least one candidate.');
   if(clips.some(c=>!Number.isFinite(c.start)||!Number.isFinite(c.end)||c.start<0||c.end<=c.start||c.end>plan.duration)) return error('Check the selected timestamps.');
   $('render').disabled=true;
-  try { const job=await api('/render',{clips,layout:$('layout').value}); currentJob=job.id; $('progress').hidden=false; $('progress').value=0; $('cancel').hidden=false; $('results').replaceChildren(); poll(); }
+  try { const job=await api('/render',{clips,layout:$('layout').value,resolution:$('resolution').value,preset:$('preset').value||null}); currentJob=job.id; $('progress').hidden=false; $('progress').value=0; $('cancel').hidden=false; $('results').replaceChildren(); poll(); }
   catch(e){ error(e.message); finish(); }
 };
 $('cancel').onclick=async()=>{ if(currentJob) { try{ await api('/cancel',{job_id:currentJob}); $('status').textContent='Cancellation requested…'; }catch(e){error(e.message);} } };
 $('play').onclick=()=>{if(active)preview(active);};
 $('video').addEventListener('timeupdate',()=>{if(rangeEnd!==undefined && $('video').currentTime>=rangeEnd){$('video').pause();$('video').currentTime=rangeEnd;rangeEnd=undefined;}});
+function exportSummary(){
+  const platform=$('preset').value;
+  const landscape=$('layout').querySelector('[value=landscape]');
+  landscape.disabled=Boolean(platform);
+  if(platform && $('layout').value==='landscape') $('layout').value='fit';
+  const small=$('resolution').value==='720p';
+  let width=small?720:1080, height=small?1280:1920;
+  if($('layout').value==='landscape') [width,height]=[height,width];
+  $('dimensions').textContent=`${width} × ${height} · ${width<height?'9:16 vertical':'16:9 landscape'} · MP4 / H.264 / AAC`;
+}
+['preset','resolution','layout'].forEach(id=>$(id).addEventListener('change',exportSummary));
 async function init(){
   plan=await api('/plan'); $('video').src=url('/media');
   $('count').textContent=`${plan.clips.length} candidates`; $('mode').textContent=`${plan.mode} · ${plan.method} · ${plan.note}`;
-  if(['gaming','instruction'].includes(plan.mode)) $('layout').value='fit';
+  $('layout').value=plan.export_defaults?.layout || (['gaming','instruction'].includes(plan.mode)?'fit':'portrait');
+  $('preset').value=plan.export_defaults?.preset||'reels';
+  $('resolution').value=plan.export_defaults?.resolution||'auto';
+  exportSummary();
   if(!plan.clips.length) $('cards').append(node('p','No candidates found. Try a shorter duration range.','hint'));
   plan.clips.forEach(clip=>{
     const card=node('article',undefined,'card'); card.dataset.id=clip.id;

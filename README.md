@@ -84,6 +84,9 @@ The first transcription run downloads the selected faster-whisper model. `base` 
 | `--model NAME` | `base` | faster-whisper model to use, such as `base` or `small`. |
 | `--offline` | off | Do not use Gemini highlight selection. |
 | `--no-face-tracking` | off | Use a centered crop instead of face tracking. |
+| `--preset NAME` | unset | TikTok, Reels, or Shorts vertical export target. |
+| `--resolution NAME` | `auto` | `auto` (1080p), `720p`, or `1080p`. |
+| `--layout NAME` | portrait | Face-tracked portrait, full-frame fit, or custom landscape. |
 | `--allow-download` | off | Explicitly permit a YouTube download when you have the rights to use that video. |
 
 Run `kairos --help` to see the full command help.
@@ -201,6 +204,25 @@ kairos 'https://www.youtube.com/watch?v=VIDEO_ID' --discover --allow-download --
 ```
 
 Use the returned local `source` and `plan_path` to open the review studio. Downloading remains opt-in and requires authorization to process the source.
+
+## Platform presets and output resolution (v0.3 development)
+
+Choose a platform and let Kairos select the vertical export dimensions:
+
+```bash
+kairos ./video.mp4 --preset tiktok --offline
+kairos ./video.mp4 --preset reels --resolution 720p --layout fit --offline
+kairos ./video.mp4 --preset shorts --resolution 1080p --offline
+```
+
+| Target | Auto / 1080p | 720p | Aspect ratio |
+| --- | --- | --- | --- |
+| TikTok, Reels, Shorts | 1080 × 1920 | 720 × 1280 | 9:16 |
+| Custom landscape | 1920 × 1080 | 1280 × 720 | 16:9 |
+
+The platform presets are convenient vertical export targets. They currently share the same dimensions and do not claim to validate every platform upload requirement. `auto` means 1080p; it does not detect a platform from the input URL. Choose `fit` to keep all source content with padding, or `portrait` to crop/follow faces. Platform presets cannot be combined with landscape; omit `--preset` for a custom landscape export. A lower-resolution source can be upscaled but does not gain original detail.
+
+The review studio includes platform/resolution dropdowns and a live dimensions summary. Set initial choices with `--review --preset reels --resolution 720p`. MCP render tools and job options accept the same `preset` and `resolution` names. The output manifest records requested/resolved resolution, dimensions, aspect ratio, layout, and codecs. MP4 video uses H.264/yuv420p and audio uses AAC.
 
 ## Background jobs and transcript cache (v0.3 development)
 

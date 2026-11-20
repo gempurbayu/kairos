@@ -17,13 +17,16 @@ from urllib.parse import parse_qs, urlsplit
 from .cache import atomic_json
 from .discovery import fingerprint
 from .jobs import JobManager
+from .export import export_target
 from .pipeline import run_command
 
 
 class ReviewServer(ThreadingHTTPServer):
     daemon_threads = True
 
-    def __init__(self, source, plan_path, port=0):
+    def __init__(self, source, plan_path, port=0, resolution="1080p", preset=None, layout=None):
+        export_target(layout or "portrait", resolution, preset)
+        self.defaults = {"resolution": resolution, "preset": preset, "layout": layout}
         self.source = Path(source).expanduser().resolve()
         self.plan_path = Path(plan_path).expanduser().resolve()
         self.plan = json.loads(self.plan_path.read_text(encoding="utf-8"))
@@ -42,9 +45,8 @@ class ReviewServer(ThreadingHTTPServer):
     def url(self):
         return f"{self.origin}/?token={self.token}"
 
-    def start_render(self, edits, layout):
-        if layout not in ("portrait", "fit", "landscape"):
-            raise ValueError("Invalid layout")
+    def start_render(self, edits, layout, resolution="1080p", preset=None):
+        export_target(layout, resolution, preset)
         if not isinstance(edits, list) or not 1 <= len(edits) <= 20:
             raise ValueError("Select 1–20 candidates")
         by_id = {clip["id"]: clip for clip in self.plan["clips"]}
@@ -67,7 +69,8 @@ class ReviewServer(ThreadingHTTPServer):
             atomic_json(path, revised)
             return self.manager.submit("render", {"source": str(self.source),
                 "candidate_plan": str(path), "candidate_ids": [c["id"] for c in chosen],
-                "layout": layout, "face_tracking": layout == "portrait"})
+                "layout": layout, "face_tracking": layout == "portrait",
+                "resolution": resolution, "preset": preset})
 
     def server_close(self):
         self.manager.close()
@@ -152,7 +155,7 @@ class ReviewHandler(BaseHTTPRequestHandler):
         route = urlsplit(self.path).path
         try:
             if route == "/plan":
-                self.reply(200, {**self.server.plan, "duration": self.server.duration})
+                self.reply(200, {**self.server.plan, "duration": self.server.duration, "export_defaults": self.server.defaults})
             elif route in ("/", "/app.js", "/style.css"):
                 name = {"/": "index.html", "/app.js": "app.js", "/style.css": "style.css"}[route]
                 content_type = {"/": "text/html; charset=utf-8", "/app.js": "text/javascript", "/style.css": "text/css"}[route]
@@ -205,7 +208,8 @@ class ReviewHandler(BaseHTTPRequestHandler):
             body = json.loads(self.rfile.read(length))
             route = urlsplit(self.path).path
             if route == "/render":
-                self.reply(202, self.server.start_render(body["clips"], body["layout"]))
+                self.reply(202, self.server.start_render(body["clips"], body["layout"],
+                                                              body.get("resolution", "1080p"), body.get("preset")))
             elif route == "/cancel":
                 self.reply(200, self.server.manager.cancel(body["job_id"]))
             else:
@@ -214,8 +218,8 @@ class ReviewHandler(BaseHTTPRequestHandler):
             self.reply(400, {"error": "Invalid request: select valid timestamps, candidates, and layout"})
 
 
-def serve_review(source, plan_path, port=0):
-    server = ReviewServer(source, plan_path, port)
+def serve_review(source, plan_path, port=0, resolution="1080p", preset=None, layout=None):
+    server = ReviewServer(source, plan_path, port, resolution, preset, layout)
     print(f"Kairos review: {server.url}", flush=True)
     webbrowser.open(server.url)
     try:

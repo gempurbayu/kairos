@@ -22,13 +22,16 @@ def main():
     parser.add_argument("--select", nargs="+", help="Candidate IDs to render from the plan")
     parser.add_argument("--review", action="store_true", help="Open a local review page for --candidate-plan")
     parser.add_argument("--port", type=int, default=0, help="Local review port; 0 chooses a free port")
-    parser.add_argument("--layout", choices=("portrait", "fit", "landscape"), default="portrait")
+    parser.add_argument("--layout", choices=("portrait", "fit", "landscape"), default=None)
+    parser.add_argument("--preset", choices=("tiktok", "reels", "shorts"), help="Vertical platform export target")
+    parser.add_argument("--resolution", choices=("auto", "720p", "1080p"), default="auto", help="Output quality; auto uses 1080p")
     args = parser.parse_args()
     if args.review:
         if not args.candidate_plan or args.discover or args.select:
             parser.error("Review requires --candidate-plan and cannot combine with --discover or --select")
         from .review import serve_review
-        serve_review(args.source, args.candidate_plan, port=args.port)
+        serve_review(args.source, args.candidate_plan, port=args.port,
+                     resolution=args.resolution, preset=args.preset, layout=args.layout)
         return
     if args.discover:
         from .discovery import discover_candidates
@@ -43,7 +46,8 @@ def main():
     print(json.dumps(process(args.source, args.output, args.count, args.min_duration,
                              args.max_duration, args.allow_download, args.model,
                              not args.offline, not args.no_face_tracking,
-                             args.candidate_plan, args.select, args.layout), ensure_ascii=False, indent=2))
+                             args.candidate_plan, args.select, args.layout or "portrait",
+                             args.resolution, args.preset), ensure_ascii=False, indent=2))
 
 if __name__ == "__main__":
     main()

@@ -94,3 +94,15 @@ def test_abandoned_video_stream_does_not_raise(tmp_path):
             raise BrokenPipeError('browser abandoned old range')
     handler.wfile = Disconnected()
     handler.send_media(media, 'video/mp4')
+
+
+def test_review_passes_export_options_and_rejects_conflicts(review, monkeypatch):
+    captured = []
+    monkeypatch.setattr(review.manager, 'submit', lambda kind, options: captured.append(options) or {'id':'job'})
+    body = {'layout':'fit', 'resolution':'720p', 'preset':'tiktok',
+            'clips':[{'id':'candidate_01','start':0,'end':2}]}
+    assert request(review, '/render', 'POST', body)[0] == 202
+    assert captured[0]['resolution'] == '720p'
+    assert captured[0]['preset'] == 'tiktok'
+    body['layout']='landscape'
+    assert request(review, '/render', 'POST', body)[0] == 400

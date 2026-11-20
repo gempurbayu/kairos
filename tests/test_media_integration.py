@@ -18,7 +18,8 @@ def has_ass():
     return " ass " in subprocess.run(["ffmpeg", "-hide_banner", "-filters"], capture_output=True, text=True).stdout
 
 
-def test_discover_select_render_with_cached_transcript(video, tmp_path, monkeypatch):
+@pytest.mark.parametrize("resolution,dimensions", [("1080p", (1080, 1920)), ("720p", (720, 1280))])
+def test_discover_select_render_with_cached_transcript(video, tmp_path, monkeypatch, resolution, dimensions):
     if not has_ass():
         pytest.skip("This FFmpeg build lacks libass; caption integration runs in CI")
     monkeypatch.setenv("KAIROS_CACHE_DIR", str(tmp_path / "cache"))
@@ -32,14 +33,15 @@ def test_discover_select_render_with_cached_transcript(video, tmp_path, monkeypa
     assert len(preview["clips"][0]["thumbnails"]) == 3
     result = pipeline.process(str(video), str(tmp_path / "rendered"),
                               candidate_plan=preview["plan_path"], candidate_ids=["candidate_01"],
-                              face_tracking=False)
+                              face_tracking=False, preset="reels", resolution=resolution)
     assert calls == [1], "Review to render should reuse the cached transcript"
     clip = result["clips"][0]
     assert Path(clip["video"]).stat().st_size > 0
     assert "tutorial" in Path(clip["subtitles"]).read_text()
     probe = json.loads(subprocess.check_output(["ffprobe", "-v", "error", "-show_streams", "-of", "json", clip["video"]]))
     stream = next(s for s in probe["streams"] if s["codec_type"] == "video")
-    assert (stream["width"], stream["height"]) == (1080, 1920)
+    assert (stream["width"], stream["height"]) == dimensions
+    assert result["export"]["resolution"] == resolution
 
 
 def test_mcp_stdio_job_workflow(video, tmp_path):

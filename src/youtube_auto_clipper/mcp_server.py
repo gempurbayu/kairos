@@ -1,6 +1,7 @@
 """MCP stdio entry point shared by Codex, Hermes, OpenClaw, and other clients."""
 import json
 import threading
+from typing import Literal
 from pathlib import Path
 
 from mcp.server.fastmcp import FastMCP
@@ -108,15 +109,19 @@ def generate_clips(source: str, output_dir: str = "output", count: int = 3,
                    min_duration: float = 20, max_duration: float = 60,
                    allow_download: bool = False, use_ai: bool = True,
                    face_tracking: bool = True, candidate_plan: str | None = None,
-                   candidate_ids: list[str] | None = None, layout: str = "portrait") -> str:
+                   candidate_ids: list[str] | None = None, layout: str = "portrait",
+                   resolution: Literal["auto", "720p", "1080p"] = "1080p",
+                   preset: Literal["tiktok", "reels", "shorts"] | None = None) -> str:
     """Create portrait MP4 clips with burned-in captions, separate SRT files, and a manifest.
 
+    Platform presets target vertical 9:16; resolution auto uses 1080p.
     For YouTube sources, allow_download must be true and the user must have rights to use the video.
     """
     return json.dumps(process(source, output_dir, count, min_duration,
                               max_duration, allow_download, use_ai=use_ai,
                               face_tracking=face_tracking, candidate_plan=candidate_plan,
-                              candidate_ids=candidate_ids, layout=layout), ensure_ascii=False)
+                              candidate_ids=candidate_ids, layout=layout,
+                              resolution=resolution, preset=preset), ensure_ascii=False)
 
 
 def main():

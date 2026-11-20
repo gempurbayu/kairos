@@ -223,3 +223,11 @@ Transcript caching is shared by discovery, render, and transcription tools. Set 
 To open a plan in the local review UI, run `kairos /local/video.mp4 --review --candidate-plan /path/to/candidates.json`. Keep the terminal open. The page edits timestamps, selects IDs, and starts render jobs with progress/cancel and output links. The server binds only to 127.0.0.1 and its session URL must remain private.
 
 Render tools and jobs accept `layout: "portrait"`, `"fit"`, or `"landscape"`. `fit` preserves the full frame with portrait padding; prefer it for gameplay, slides, and screen recordings. Portrait uses the existing `face_tracking` option. Other layouts disable face tracking. The UI's source preview does not simulate the final crop or burned captions.
+
+## Export presets and resolution (v0.3 development)
+
+`generate_clips` and render job options accept `preset: "tiktok"`, `"reels"`, or `"shorts"`, and `resolution: "auto"`, `"720p"`, or `"1080p"`. Auto selects 1080 × 1920. The 720p vertical option is 720 × 1280. Presets share the same 9:16 geometry and do not enforce all upload requirements.
+
+Example render job options: `{"source":"/local/video.mp4","candidate_plan":"/path/candidates.json","candidate_ids":["candidate_01"],"preset":"reels","resolution":"720p","layout":"fit"}`. Use `portrait` to crop/follow faces or `fit` to preserve the full source. For custom landscape, omit the platform preset; 720p then means 1280 × 720 and 1080p means 1920 × 1080.
+
+These options are also available as dropdowns in the local review page. The manifest's `export` object records the actual target dimensions and encoding. Upscaling does not restore detail absent from the source.

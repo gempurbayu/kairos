@@ -62,7 +62,7 @@ def test_render_uses_only_reviewed_candidates(tmp_path, monkeypatch):
     monkeypatch.setattr(pipeline, "run_command", lambda *_: '{"format":{"duration":"50"}}')
     monkeypatch.setattr(pipeline, "transcribe", lambda *_: (SEGMENTS, "en"))
     rendered = []
-    monkeypatch.setattr(pipeline, "render_clip", lambda video, start, end, *args: rendered.append((start, end)))
+    monkeypatch.setattr(pipeline, "render_clip", lambda video, start, end, *args, **kwargs: rendered.append((start, end)))
     result = pipeline.process(str(video), str(tmp_path / "out"), candidate_plan=str(plan), candidate_ids=["chosen"])
     assert rendered == [(2, 22)]
     assert result["selection_method"] == "reviewed-candidates"
@@ -100,7 +100,7 @@ def test_mcp_stdout_remains_clean_on_fallback(tmp_path, monkeypatch, capsys):
     video.write_bytes(b"fixture")
     monkeypatch.setattr(pipeline, "require_binary", lambda *_: None)
     monkeypatch.setattr(pipeline, "transcribe", lambda *_: (SEGMENTS, "en"))
-    monkeypatch.setattr(pipeline, "render_clip", lambda *args: None)
+    monkeypatch.setattr(pipeline, "render_clip", lambda *args, **kwargs: None)
     def fail(*args):
         raise RuntimeError("remote error with sensitive context")
     monkeypatch.setattr(pipeline, "ai_highlights", fail)
