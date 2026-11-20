@@ -40,7 +40,7 @@ youtube-clipper 'https://www.youtube.com/watch?v=YOUR_VIDEO_ID' --allow-download
 ```
 
 ## Connect an agent harness
-Run `./scripts/setup.sh` (Windows: `scripts/setup.ps1`) once, then point your MCP client at the printed `youtube-clipper-mcp` executable using the **stdio** transport. Copy-ready Codex, Hermes, OpenClaw, and generic MCP examples are in [docs/INTEGRATIONS.md](docs/INTEGRATIONS.md). The same MCP server works with other stdio-compatible clients. The portable agent instructions are in `skills/youtube-clipper/SKILL.md`.
+Install `uv` and FFmpeg, then run `./scripts/setup.sh` (Windows: `scripts/setup.ps1`) once. The server is installed as a global command, so each harness uses the same `youtube-clipper-mcp` command over **stdio** without a project-specific executable path. Copy-ready Codex, Hermes, OpenClaw, and generic MCP examples are in [docs/INTEGRATIONS.md](docs/INTEGRATIONS.md). The portable agent instructions are in `skills/youtube-clipper/SKILL.md`.
 
 ## Output
 ```

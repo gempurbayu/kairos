@@ -2,11 +2,15 @@
 set -eu
 
 PROJECT_ROOT="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
-PYTHON_BIN="${PYTHON:-python3}"
+UV_BIN="${UV:-uv}"
 
-"$PYTHON_BIN" -m venv "$PROJECT_ROOT/.venv"
-"$PROJECT_ROOT/.venv/bin/python" -m pip install --upgrade pip
-"$PROJECT_ROOT/.venv/bin/python" -m pip install -e "$PROJECT_ROOT"
+if ! command -v "$UV_BIN" >/dev/null 2>&1; then
+  echo "uv is required. Install it with: brew install uv" >&2
+  exit 1
+fi
 
-printf '\nSetup complete. MCP server command:\n%s\n' "$PROJECT_ROOT/.venv/bin/youtube-clipper-mcp"
+"$UV_BIN" tool install --editable "$PROJECT_ROOT"
+
+printf '\nSetup complete. Use this same MCP command in every harness:\nyoutube-clipper-mcp\n'
+printf 'If the harness cannot find it, run: %s tool update-shell\n' "$UV_BIN"
 printf 'Optional: create %s/.env and set GEMINI_API_KEY for Gemini highlight selection.\n' "$PROJECT_ROOT"

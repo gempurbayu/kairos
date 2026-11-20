@@ -1,12 +1,14 @@
 $ErrorActionPreference = "Stop"
 $ProjectRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
-$PythonExe = if ($env:PYTHON) { $env:PYTHON } else { "python" }
-$VenvPython = Join-Path $ProjectRoot ".venv\Scripts\python.exe"
+$UvExe = if ($env:UV) { $env:UV } else { "uv" }
 
-& $PythonExe -m venv (Join-Path $ProjectRoot ".venv")
-& $VenvPython -m pip install --upgrade pip
-& $VenvPython -m pip install -e $ProjectRoot
+if (-not (Get-Command $UvExe -ErrorAction SilentlyContinue)) {
+    throw "uv is required. Install it from https://docs.astral.sh/uv/getting-started/installation/"
+}
 
-Write-Host "Setup complete. MCP server command:"
-Write-Host (Join-Path $ProjectRoot ".venv\Scripts\youtube-clipper-mcp.exe")
+& $UvExe tool install --editable $ProjectRoot
+if ($LASTEXITCODE -ne 0) { throw "uv tool install failed with exit code $LASTEXITCODE" }
+
+Write-Host "Setup complete. Use this same MCP command in every harness: youtube-clipper-mcp"
+Write-Host "If the harness cannot find it, run: uv tool update-shell"
 Write-Host "Optional: create $ProjectRoot\.env and set GEMINI_API_KEY for Gemini highlight selection."
