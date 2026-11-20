@@ -13,6 +13,12 @@ Use this skill when asked to identify and render highlights from long-form video
 - Do not bypass access restrictions, DRM, or platform safeguards.
 - Never imply an offline heuristic guarantees viral performance.
 
+## Readiness and export preview
+
+- Use `check_kairos_setup` or `kairos doctor` when starting on a new machine or diagnosing failures. Never claim weights are cached when `offline_ready` is false; do not reveal credential values.
+- Before a full export, offer `render_clip_preview` or a `preview` job for one reviewed candidate. Use its `candidate_id` and the same layout/resolution/preset as the requested final export. The preview is 1–10 seconds and applies real crop/captions.
+- Show the resulting preview path and describe it as a short sample. A completed preview does not mean the full video was rendered or approved. Keep full rendering separate.
+
 ## Workflow
 1. Confirm source path or authorized YouTube URL, desired count and duration.
 2. Prefer background MCP jobs for long work when `start_clip_job` is available. Use kind `discover` or `render` and put pipeline arguments in `options` (`source`, not `path`). Poll `get_clip_job` for phase progress and the completed result. Report failure/cancellation honestly; use `cancel_clip_job` on request and wait for terminal status. Jobs belong to the current server session and cannot resume after restart.

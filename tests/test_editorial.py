@@ -85,6 +85,7 @@ def test_direct_pipeline_uses_bilingual_goal_and_category(tmp_path, monkeypatch)
     segments = [{'start':0,'end':22,'text':'Subscribe like like follow subscribe.'},
                 {'start':25,'end':47,'text':'Reaksi lucu! Aku kaget lalu ketawa melihat kesalahan itu.'}]
     monkeypatch.setattr(pipeline,'require_binary',lambda *_:None)
+    monkeypatch.setattr(pipeline, "require_render_support", lambda: None)
     monkeypatch.setattr(pipeline,'transcribe',lambda *_:(segments,'id'))
     monkeypatch.setattr(pipeline,'render_clip',lambda *args,**kwargs:None)
     result = pipeline.process(str(video),str(tmp_path/'out'),count=1,min_duration=20,max_duration=25,

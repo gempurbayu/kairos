@@ -1,10 +1,15 @@
 import argparse
 import json
+import sys
 from .pipeline import process
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Turn authorized videos into portrait short clips")
+    if len(sys.argv) > 1 and sys.argv[1] == "doctor":
+        from .doctor import doctor_cli
+        return doctor_cli(sys.argv[2:])
+    parser = argparse.ArgumentParser(description="Turn authorized videos into portrait short clips",
+                                     epilog="Run kairos doctor [--json] to check your local setup.")
     parser.add_argument("source", help="Local video path or YouTube URL")
     parser.add_argument("--output", default="output")
     parser.add_argument("--count", type=int, default=3)
@@ -25,7 +30,18 @@ def main():
     parser.add_argument("--layout", choices=("portrait", "fit", "landscape"), default=None)
     parser.add_argument("--preset", choices=("tiktok", "reels", "shorts"), help="Vertical platform export target")
     parser.add_argument("--resolution", choices=("auto", "720p", "1080p"), default="auto", help="Output quality; auto uses 1080p")
+    parser.add_argument("--preview", action="store_true", help="Render a short final-look preview of one selected candidate")
+    parser.add_argument("--preview-seconds", type=float, default=5, help="Preview length, 1–10 seconds")
     args = parser.parse_args()
+    if args.preview:
+        if args.review or args.discover or not args.candidate_plan or not args.select or len(args.select) != 1:
+            parser.error("Preview requires --candidate-plan and exactly one --select ID")
+        from .pipeline import preview_clip
+        result = preview_clip(args.source, args.candidate_plan, args.select[0], args.output,
+                              args.preview_seconds, args.layout or "portrait", args.resolution,
+                              args.preset, not args.no_face_tracking, args.model)
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+        return
     if args.review:
         if not args.candidate_plan or args.discover or args.select:
             parser.error("Review requires --candidate-plan and cannot combine with --discover or --select")

@@ -74,6 +74,8 @@ main()
                             return status["result"]
                         await asyncio.sleep(.1)
                     raise AssertionError("Job timed out")
+                readiness = await call("check_kairos_setup", {"output_dir": str(tmp_path)})
+                assert readiness["ready"] and readiness["network_used"] is False
                 job = await call("start_clip_job", {"kind": "discover", "options": {
                     "source": str(video), "count": 1, "min_duration": 1, "max_duration": 3,
                     "mode": "instruction"}})
@@ -85,4 +87,10 @@ main()
                         "candidate_ids": ["candidate_01"], "face_tracking": False}})
                     rendered = await finish(job["id"])
                     assert Path(rendered["clips"][0]["video"]).is_file()
+                    preview_job = await call("start_clip_job", {"kind": "preview", "options": {
+                        "source": str(video), "candidate_plan": plan["plan_path"],
+                        "candidate_id": "candidate_01", "seconds": 1,
+                        "layout": "fit", "resolution": "720p", "preset": "reels"}})
+                    preview = await finish(preview_job["id"])
+                    assert preview["is_preview"] and preview["clips"][0]["end"] == 1
     asyncio.run(run())

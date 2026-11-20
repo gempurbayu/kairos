@@ -59,6 +59,7 @@ def test_render_uses_only_reviewed_candidates(tmp_path, monkeypatch):
     plan.write_text(json.dumps({"schema_version": 1, "source_sha256": discovery.fingerprint(video),
                                "clips": [{"id": "chosen", "start": 2, "end": 22}]}))
     monkeypatch.setattr(pipeline, "require_binary", lambda *_: None)
+    monkeypatch.setattr(pipeline, "require_render_support", lambda: None)
     monkeypatch.setattr(pipeline, "run_command", lambda *_: '{"format":{"duration":"50"}}')
     monkeypatch.setattr(pipeline, "transcribe", lambda *_: (SEGMENTS, "en"))
     rendered = []
@@ -99,6 +100,7 @@ def test_mcp_stdout_remains_clean_on_fallback(tmp_path, monkeypatch, capsys):
     video = tmp_path / "video.mp4"
     video.write_bytes(b"fixture")
     monkeypatch.setattr(pipeline, "require_binary", lambda *_: None)
+    monkeypatch.setattr(pipeline, "require_render_support", lambda: None)
     monkeypatch.setattr(pipeline, "transcribe", lambda *_: (SEGMENTS, "en"))
     monkeypatch.setattr(pipeline, "render_clip", lambda *args, **kwargs: None)
     def fail(*args):

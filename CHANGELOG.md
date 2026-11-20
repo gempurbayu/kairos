@@ -4,6 +4,18 @@ Notable changes to Kairos are recorded here. This changelog follows [Keep a Chan
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-11-21
+
+### Added
+
+- Local doctor command and MCP readiness diagnostics for media tools, captions/encoders, detector, model cache, and writable directories.
+- Render preflight checks before transcription, and setup-script readiness checks after installation.
+- Real 1–10 second rendered previews through CLI, MCP, background jobs, and the review page, with isolated output folders and explicit source/rendered playback states.
+
+### Fixed
+
+- SRT excerpts now use available word timestamps when preview or edited ranges cut through an ASR segment.
+
 ## [0.3.1] - 2026-11-21
 
 ### Fixed
@@ -88,7 +100,8 @@ Notable changes to Kairos are recorded here. This changelog follows [Keep a Chan
 - Offline highlight scoring, portrait clip rendering, face tracking, karaoke captions, SRT subtitles, and a JSON manifest.
 - CLI and MCP server entry points, a portable Agent Skill, and initial GitHub Actions CI.
 
-[Unreleased]: https://github.com/gempurbayu/kairos/compare/v0.3.1...HEAD
+[Unreleased]: https://github.com/gempurbayu/kairos/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/gempurbayu/kairos/compare/v0.3.1...v0.4.0
 [0.3.1]: https://github.com/gempurbayu/kairos/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/gempurbayu/kairos/compare/v0.2.4...v0.3.0
 [0.2.4]: https://github.com/gempurbayu/kairos/compare/v0.2.3...v0.2.4

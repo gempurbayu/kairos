@@ -237,3 +237,11 @@ These options are also available as dropdowns in the local review page. The mani
 Discovery, direct rendering, and `find_highlights` share the same selection policy. Pass `mode` and `goal` to direct rendering and render jobs when not using a reviewed plan. Reviewed IDs and edited timestamps remain authoritative.
 
 Offline selection maps common English/Indonesian goal concepts through a small lexicon, groups ASR fragments at punctuation/pauses, penalizes repetition/CTA and content transitions, and reports `content_mode`, `classification_evidence`, `goal_matches`, `boundary`, and warnings per candidate. This is explainable heuristic matching, not arbitrary cross-language semantic comprehension. Gemini proposals are optionally used, validated, and snapped back to transcript windows; overlapping snapped proposals are deduplicated. A mode/goal unsupported by the content should not be presented as a detected event.
+
+## Readiness and rendered previews (v0.4)
+
+Call `check_kairos_setup` before starting expensive work. `ready` indicates required dependencies and directories pass; `offline_ready` additionally requires cached model weights. Face-detector absence is a warning with a centered-crop fallback. The tool never downloads weights or prints credential values. CLI users can run `kairos doctor` or `kairos doctor --json`; required failures exit with code 1.
+
+Use `render_clip_preview` with `source`, `candidate_plan`, `candidate_id`, `seconds` (1–10), and the chosen export options. Or start a background job with `kind: "preview"` and those fields in `options`. The actual renderer applies crop/face tracking/layout/captions/resolution to the beginning of the reviewed range. Preview results use a new output subfolder and report `is_preview: true`. A full render remains a separate operation; preview completion is not approval to export or publish the entire video.
+
+The review UI calls the same readiness checks, offers a Render preview button, plays the resulting MP4, and can switch back to the source. Fix any prerequisite failures and click Check setup again before retrying.

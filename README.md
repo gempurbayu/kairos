@@ -53,6 +53,25 @@ python -m pip install -e .
 
 The `kairos` command is now available in the active virtual environment. For Gemini-assisted highlight selection, copy `.env.example` to `.env` and set `GEMINI_API_KEY`. Without a key, Kairos uses its offline transcript heuristic. Keep `.env` private; it is excluded by `.gitignore`.
 
+## Check your setup (v0.4)
+
+```bash
+kairos doctor
+kairos doctor --json
+```
+
+Doctor checks FFmpeg/ffprobe, the ASS caption filter, H.264/AAC encoders, local transcription imports, face detector data, writable output/cache/job directories, and cached model files. It never downloads model weights or validates API keys. An unwritable optional transcript cache is a warning and processing can continue without saving cache entries. A missing model is a warning: the first transcription needs internet. Required failures return exit code 1. Rendering checks the media prerequisites before transcribing.
+
+On macOS/Homebrew, the [ffmpeg-full formula](https://formulae.brew.sh/formula/ffmpeg-full) includes libass. Because it is keg-only, put its bin directory before another FFmpeg installation:
+
+```bash
+brew install ffmpeg-full
+export PATH="$(brew --prefix ffmpeg-full)/bin:$PATH"
+kairos doctor
+```
+
+Apply the PATH setting in the environment that starts your agent harness and restart it. Other systems need an FFmpeg build with libass, libx264, and AAC. The setup scripts run doctor after installing Kairos and report prerequisites that still need attention.
+
 ## Quick start
 
 Process a local video without using Gemini:
@@ -210,6 +229,20 @@ kairos 'https://www.youtube.com/watch?v=VIDEO_ID' --discover --allow-download --
 ```
 
 Use the returned local `source` and `plan_path` to open the review studio. Downloading remains opt-in and requires authorization to process the source.
+
+## Render a short final-look preview (v0.4)
+
+After discovering candidates, render 1–10 seconds of one chosen range with the actual crop, face tracking, export resolution, and burned captions:
+
+```bash
+kairos ./video.mp4 --candidate-plan ./candidates/review-EXAMPLE/candidates.json --select candidate_01 --preview --preview-seconds 5 --preset reels --resolution 720p --layout fit
+```
+
+In the review studio, choose a candidate, edit its times/settings, then click **Render preview**. The player switches to the rendered MP4, rather than simulating crop or captions in CSS. **Back to source** restores the original video. Changing settings marks the old preview as stale. The UI checks local readiness first and shows fixes for missing prerequisites.
+
+Preview output goes into a new folder for each request and does not replace a full render or previous preview. A preview covers the first requested seconds of the selected/edited range (or the entire range if shorter). It uses the transcript cache when available and the same renderer as full exports; the final full clip still needs review for later framing/caption changes.
+
+MCP offers `check_kairos_setup` and `render_clip_preview`. For nonblocking work, use `start_clip_job(kind="preview", options={...})` with `source`, `candidate_plan`, `candidate_id`, and `seconds` plus layout/export options. Results have `is_preview: true` and include MP4/SRT paths.
 
 ## Platform presets and output resolution (v0.3)
 

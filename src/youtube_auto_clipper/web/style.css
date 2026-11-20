@@ -2,3 +2,5 @@
 .workspace>*{min-width:0}.card-top label{min-width:0;overflow-wrap:anywhere}.badge{white-space:nowrap}.times label{min-width:0}video{max-width:100%}@media(max-width:850px){.workspace{grid-template-columns:minmax(0,1fr)}.preview-bar{flex-wrap:wrap}}
 
 .render-panel>select+label{margin-top:14px}
+
+.preview{position:static}.player video{height:100%;max-height:none;object-fit:contain}.player.rendered{aspect-ratio:9/16;max-width:360px;margin-inline:auto}.player.rendered-wide{aspect-ratio:16/9;max-width:none}#render-preview{width:100%;margin-top:10px}#readiness{overflow-wrap:anywhere}#check-setup{margin-bottom:14px}

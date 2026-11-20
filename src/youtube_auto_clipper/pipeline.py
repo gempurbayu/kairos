@@ -11,6 +11,7 @@ from urllib.parse import urlparse
 
 from .runtime import checkpoint, run_capture
 from .export import export_target
+from .doctor import require_render_support
 from .cache import cached_transcript
 
 from dotenv import load_dotenv
@@ -201,7 +202,17 @@ def make_srt(segments, start, end, destination):
         b = min(segment["end"], end)
         if b <= a:
             continue
-        lines.append(f"{idx}\n{srt_timestamp(a-start)} --> {srt_timestamp(b-start)}\n{segment['text']}\n")
+        words = [w for w in segment.get("words", []) if w["end"] > a and w["start"] < b and w.get("text")]
+        if segment.get("words"):
+            if not words:
+                continue
+            text = " ".join(word["text"] for word in words)
+            a, b = max(a, words[0]["start"]), min(b, words[-1]["end"])
+        else:
+            text = segment["text"]
+        if b <= a:
+            continue
+        lines.append(f"{idx}\n{srt_timestamp(a-start)} --> {srt_timestamp(b-start)}\n{text}\n")
         idx += 1
     destination.write_text("\n".join(lines), encoding="utf-8")
 
@@ -356,11 +367,18 @@ def render_clip(video, start, end, target, captions=None, face_tracking=True, la
 def process(source, output_dir="output", count=3, min_duration=20, max_duration=60,
             allow_download=False, model_name=None, use_ai=True, face_tracking=True,
             candidate_plan=None, candidate_ids=None, layout="portrait",
-            resolution="1080p", preset=None, mode="auto", goal=""):
+            resolution="1080p", preset=None, mode="auto", goal="", preview_seconds=None):
     checkpoint("validating", 2)
     from .discovery import validate_options, load_selection, select_editorial_highlights
     validate_options(count, min_duration, max_duration, mode)
     export = export_target(layout, resolution, preset)
+    if preview_seconds is not None:
+        if not isinstance(preview_seconds, (int, float)) or isinstance(preview_seconds, bool) or not math.isfinite(preview_seconds) or not 1 <= preview_seconds <= 10:
+            raise ValueError("Preview length must be a finite value from 1 to 10 seconds")
+        if not candidate_plan or not candidate_ids or len(candidate_ids) != 1:
+            raise ValueError("Preview requires a candidate plan and exactly one selected ID")
+    checkpoint("checking render environment", 3)
+    require_render_support()
     if bool(candidate_plan) != bool(candidate_ids):
         raise ValueError("Provide both candidate_plan and candidate_ids")
     selected = None
@@ -377,6 +395,9 @@ def process(source, output_dir="output", count=3, min_duration=20, max_duration=
             clip.update(start=start, end=end)
             if not (math.isfinite(start) and math.isfinite(end) and 0 <= start < end <= duration):
                 raise ValueError("Candidate timestamps exceed the source video")
+            if preview_seconds is not None:
+                clip["candidate_end"] = end
+                clip["end"] = min(end, start + preview_seconds)
     require_binary("ffmpeg")
     output = Path(output_dir).expanduser().resolve()
     output.mkdir(parents=True, exist_ok=True)
@@ -409,7 +430,22 @@ def process(source, output_dir="output", count=3, min_duration=20, max_duration=
         manifest = {"source": source, "language": language, "selection_method": method,
                     "face_tracking": face_tracking if layout == "portrait" else False,
                     "layout": layout, "export": export, "captions_burned_in": True,
+                    "is_preview": preview_seconds is not None, "preview_seconds": preview_seconds,
                     "clips": results, "note": "TikTok-style captions are burned into MP4; SRT is also provided separately."}
         checkpoint("writing manifest", 98)
         (output / "manifest.json").write_text(json.dumps(manifest, indent=2, ensure_ascii=False), encoding="utf-8")
         return manifest
+
+
+def preview_clip(source, candidate_plan, candidate_id, output_dir="output", seconds=5,
+                 layout="portrait", resolution="1080p", preset=None, face_tracking=True,
+                 model_name=None):
+    """Render the first 1–10 seconds of one reviewed range using final export settings."""
+    # Preview files never replace an existing full render or an older preview.
+    folder = Path(output_dir).expanduser().resolve()
+    folder.mkdir(parents=True, exist_ok=True)
+    target = tempfile.mkdtemp(prefix="preview-", dir=folder)
+    return process(source, output_dir=target, count=1, use_ai=False,
+                   candidate_plan=candidate_plan, candidate_ids=[candidate_id],
+                   layout=layout, resolution=resolution, preset=preset,
+                   face_tracking=face_tracking, model_name=model_name, preview_seconds=seconds)

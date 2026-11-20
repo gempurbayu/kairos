@@ -32,13 +32,13 @@ class JobManager:
             job["persistence_warning"] = "Status snapshot could not be saved; status is available in memory"
 
     def submit(self, kind, options):
-        if kind not in ("discover", "render"):
-            raise ValueError("Job kind must be discover or render")
+        if kind not in ("discover", "render", "preview"):
+            raise ValueError("Job kind must be discover, render, or preview")
         # Only allow parameters the public pipeline actually accepts.
         from inspect import signature
         from .discovery import discover_candidates
-        from .pipeline import process
-        operation = discover_candidates if kind == "discover" else process
+        from .pipeline import process, preview_clip
+        operation = {"discover": discover_candidates, "render": process, "preview": preview_clip}[kind]
         signature(operation).bind(**options)
         with self.lock:
             if sum(item["status"] not in TERMINAL for item, _ in self.jobs.values()) >= self.max_pending:
@@ -91,6 +91,8 @@ class JobManager:
                 self._save(job)
         except Exception as exc:
             message = f"{type(exc).__name__}: job failed; check media and tool prerequisites"
+            if isinstance(exc, RuntimeError) and str(exc).startswith("Render prerequisites failed:"):
+                message = str(exc)
             if isinstance(exc, RuntimeError) and str(exc).startswith("FFmpeg needs the ass/libass"):
                 message = "FFmpeg needs the ass/libass subtitle filter; install a build with libass and retry"
             with self.lock:

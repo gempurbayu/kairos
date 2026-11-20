@@ -7,7 +7,7 @@ from pathlib import Path
 from mcp.server.fastmcp import FastMCP
 
 from .discovery import discover_candidates, validate_options, select_editorial_highlights
-from .pipeline import process, transcribe
+from .pipeline import process, transcribe, preview_clip
 
 
 mcp = FastMCP("kairos")
@@ -25,8 +25,31 @@ def job_manager():
 
 
 @mcp.tool()
+def check_kairos_setup(model: str = "base", output_dir: str = "output") -> str:
+    """Check local FFmpeg/captions/encoders, detector, model cache and writable paths.
+
+    Does not download models, call Gemini, or print credentials.
+    """
+    from .doctor import diagnose
+    return json.dumps(diagnose(model, output_dir), ensure_ascii=False)
+
+
+@mcp.tool()
+def render_clip_preview(source: str, candidate_plan: str, candidate_id: str,
+                        output_dir: str = "output/preview", seconds: float = 5,
+                        layout: str = "portrait", resolution: str = "1080p",
+                        preset: str | None = None, face_tracking: bool = True) -> str:
+    """Render 1–10 seconds of one reviewed candidate with actual crop/layout/captions.
+
+    For background processing use start_clip_job(kind="preview", options=...).
+    """
+    return json.dumps(preview_clip(source, candidate_plan, candidate_id, output_dir,
+                                  seconds, layout, resolution, preset, face_tracking), ensure_ascii=False)
+
+
+@mcp.tool()
 def start_clip_job(kind: str, options: dict) -> str:
-    """Start a background discover or render job; returns a job ID immediately.
+    """Start a background discover, render, or preview job; returns a job ID immediately.
 
     Options use the shared Python pipeline names: discover requires source; render
     requires source and optionally candidate_plan/candidate_ids. Output is isolated

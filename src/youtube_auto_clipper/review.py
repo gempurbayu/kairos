@@ -45,10 +45,13 @@ class ReviewServer(ThreadingHTTPServer):
     def url(self):
         return f"{self.origin}/?token={self.token}"
 
-    def start_render(self, edits, layout, resolution="1080p", preset=None):
+    def start_render(self, edits, layout, resolution="1080p", preset=None, preview_seconds=None):
         export_target(layout, resolution, preset)
         if not isinstance(edits, list) or not 1 <= len(edits) <= 20:
             raise ValueError("Select 1–20 candidates")
+        if preview_seconds is not None:
+            if len(edits) != 1 or not isinstance(preview_seconds, (int, float)) or isinstance(preview_seconds, bool) or not math.isfinite(preview_seconds) or not 1 <= preview_seconds <= 10:
+                raise ValueError("Preview requires one candidate and a length of 1–10 seconds")
         by_id = {clip["id"]: clip for clip in self.plan["clips"]}
         chosen, seen = [], set()
         for edit in edits:
@@ -67,6 +70,11 @@ class ReviewServer(ThreadingHTTPServer):
         path = self.plan_path.parent / f"reviewed-{uuid.uuid4().hex}.json"
         with self.edit_lock:
             atomic_json(path, revised)
+            if preview_seconds is not None:
+                return self.manager.submit("preview", {"source": str(self.source),
+                    "candidate_plan": str(path), "candidate_id": chosen[0]["id"], "seconds": preview_seconds,
+                    "layout": layout, "face_tracking": layout == "portrait",
+                    "resolution": resolution, "preset": preset})
             return self.manager.submit("render", {"source": str(self.source),
                 "candidate_plan": str(path), "candidate_ids": [c["id"] for c in chosen],
                 "layout": layout, "face_tracking": layout == "portrait",
@@ -154,7 +162,10 @@ class ReviewHandler(BaseHTTPRequestHandler):
             return
         route = urlsplit(self.path).path
         try:
-            if route == "/plan":
+            if route == "/doctor":
+                from .doctor import diagnose
+                self.reply(200, diagnose(output_dir=str(self.server.plan_path.parent), jobs_dir=self.server.manager.root))
+            elif route == "/plan":
                 self.reply(200, {**self.server.plan, "duration": self.server.duration, "export_defaults": self.server.defaults})
             elif route in ("/", "/app.js", "/style.css"):
                 name = {"/": "index.html", "/app.js": "app.js", "/style.css": "style.css"}[route]
@@ -207,15 +218,16 @@ class ReviewHandler(BaseHTTPRequestHandler):
                 raise ValueError("Expected a small JSON request")
             body = json.loads(self.rfile.read(length))
             route = urlsplit(self.path).path
-            if route == "/render":
+            if route in ("/render", "/preview"):
                 self.reply(202, self.server.start_render(body["clips"], body["layout"],
-                                                              body.get("resolution", "1080p"), body.get("preset")))
+                                                              body.get("resolution", "1080p"), body.get("preset"),
+                                                              body.get("seconds", 5) if route == "/preview" else None))
             elif route == "/cancel":
                 self.reply(200, self.server.manager.cancel(body["job_id"]))
             else:
                 self.reply(404, {"error": "Not found"})
         except (ValueError, KeyError, TypeError, OSError):
-            self.reply(400, {"error": "Invalid request: select valid timestamps, candidates, and layout"})
+            self.reply(400, {"error": "Invalid request: check timestamps, candidates, layout, and preview length (1–10 seconds)"})
 
 
 def serve_review(source, plan_path, port=0, resolution="1080p", preset=None, layout=None):

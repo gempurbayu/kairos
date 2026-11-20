@@ -106,3 +106,16 @@ def test_review_passes_export_options_and_rejects_conflicts(review, monkeypatch)
     assert captured[0]['preset'] == 'tiktok'
     body['layout']='landscape'
     assert request(review, '/render', 'POST', body)[0] == 400
+
+
+def test_review_preview_schedules_one_short_job(review,monkeypatch):
+    captured=[]
+    monkeypatch.setattr(review.manager,'submit',lambda kind,options:captured.append((kind,options)) or {'id':'preview-job'})
+    body={'layout':'fit','preset':'reels','resolution':'720p','seconds':3,
+          'clips':[{'id':'candidate_01','start':.2,'end':1.8}]}
+    assert request(review,'/preview','POST',body)[0]==202
+    kind,options=captured[0]
+    assert kind=='preview' and options['candidate_id']=='candidate_01' and options['seconds']==3
+    assert options['resolution']=='720p' and options['preset']=='reels'
+    body['seconds']=100
+    assert request(review,'/preview','POST',body)[0]==400
