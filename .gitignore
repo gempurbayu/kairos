@@ -8,3 +8,4 @@ output/
 *.egg-info/
 build/
 dist/
+candidates/

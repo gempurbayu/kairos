@@ -199,3 +199,13 @@ For the first publication, configure a [pending publisher in PyPI](https://docs.
 - GitHub environment: `pypi`
 
 For each release, update the project version, commit the change, create the matching tag (for example, `v0.2.4`), then push the commit and tag. Publishing starts after the release tests pass. Version `0.2.3` is the first release using this workflow.
+
+## Candidate review workflow (v0.3 development)
+
+Install the current checkout to use `discover_clip_candidates`; it is not part of the v0.2.4 package. Restart your MCP client after installing the updated checkout.
+
+Ask your agent: "Find five useful teaching moments in `/absolute/path/video.mp4`, using instruction mode and offline selection. Show the timestamps, reasons, confidence, and thumbnails before rendering."
+
+The agent should call `discover_clip_candidates` with `path`, `mode: "instruction"`, `goal: "useful teaching moments"`, `count: 5`, and `use_ai: false`. Use `gaming` for experimental commentary/reaction analysis. `auto` chooses a mode from transcript keywords.
+
+After review, ask: "Render candidate_01 and candidate_03 from that plan." The agent calls `generate_clips` with the same local source, `candidate_plan` set to the returned `plan_path`, and `candidate_ids: ["candidate_01", "candidate_03"]`. The fingerprint must match the video and timestamps must be inside its duration. Discovery never downloads a YouTube URL; use a local authorized source.

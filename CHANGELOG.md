@@ -4,6 +4,20 @@ Notable changes to Kairos are recorded here. This changelog follows [Keep a Chan
 
 ## [Unreleased]
 
+### Added
+
+- Reviewable local candidate discovery with conversation, instruction, auto, and experimental commented-gaming modes.
+- Editorial goals, component scores, heuristic confidence, transcript excerpts, audio dynamics, sampled frame changes, and thumbnail previews.
+- CLI discovery and candidate selection, plus the `discover_clip_candidates` MCP tool.
+- Video fingerprint and timestamp validation before rendering selected candidate IDs.
+
+### Fixed
+
+- Constrained the MCP SDK to its compatible v1 API; v2 removes the FastMCP import used by this server.
+
+- Pipeline fallback warnings now go to stderr to preserve MCP stdio output.
+- Rejected non-finite duration options and AI timestamps outside transcript coverage.
+
 ## [0.2.4] - 2026-11-21
 
 ### Added

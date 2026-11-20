@@ -161,6 +161,27 @@ uv tool install kairos-video-clipper
 
 For a direct harness launch without a Git URL, configure the MCP command as `uvx` with arguments `--from`, `kairos-video-clipper`, and `kairos-mcp`. The first launch downloads the package and dependencies; subsequent launches use uv's cache.
 
+## Preview and select candidates (v0.3 development)
+
+The working tree adds a discovery workflow; the latest published package may not include it yet. Install this checkout with `pip install -e .` to use it.
+
+```bash
+kairos ./video.mp4 --discover --mode instruction --goal "useful tips" --offline --count 5 --output ./candidates
+kairos ./game.mp4 --discover --mode gaming --goal "clutch funny reactions" --offline --output ./candidates
+```
+
+Discovery writes a new review folder containing `candidates.json` and up to three JPEG thumbnails per candidate. Review the returned `plan_path`, IDs, transcript excerpts, and reasons, then render only your chosen IDs:
+
+```bash
+kairos ./video.mp4 --candidate-plan ./candidates/review-EXAMPLE/candidates.json --select candidate_01 candidate_03 --output ./output/reviewed
+```
+
+Replace `review-EXAMPLE` with the actual review folder. A SHA-256 fingerprint checks that the plan targets the same video. Rendering re-transcribes the video to produce captions; transcript caching and background jobs are not implemented yet.
+
+Modes are `auto`, `conversation`, `instruction`, and experimental `gaming`. Auto mode uses transcript keywords and can be overridden. Offline scoring recognizes English and some Indonesian cues. Use `--goal` to favor matching transcript terms; optional Gemini selection also receives the mode and goal. Candidate scores include hook, context, pacing, goal relevance, audio dynamics, and sampled frame changes. Confidence labels are heuristic, not calibrated probabilities. Audio/frame signals are sampled only for the transcript shortlist, so silent action footage is not supported. Gaming does not recognize specific events or HUD information. Use `--no-media-analysis` to skip audio/frame sampling.
+
+For MCP, call `discover_clip_candidates`, review the response, and pass `plan_path` as `candidate_plan` plus the chosen `candidate_ids` to `generate_clips`. Existing `find_highlights` and direct rendering remain available.
+
 ## Configuration
 
 | Variable | Default | Purpose |
