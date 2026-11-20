@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/kairos-logo.svg" alt="Kairos — Find the moment that matters" width="520">
+  <img src="https://raw.githubusercontent.com/gempurbayu/kairos/main/assets/kairos-logo.svg" alt="Kairos — Find the moment that matters" width="520">
 </p>
 
 # Kairos
@@ -151,6 +151,16 @@ npx skills add gempurbayu/kairos --skill kairos -g
 
 The skill provides agent instructions; the MCP installation provides the executable tools.
 
+## Install from PyPI
+
+After the first package release is published, install Kairos with:
+
+```bash
+uv tool install kairos-video-clipper
+```
+
+For a direct harness launch without a Git URL, configure the MCP command as `uvx` with arguments `--from`, `kairos-video-clipper`, and `kairos-mcp`. The first launch downloads the package and dependencies; subsequent launches use uv's cache.
+
 ## Configuration
 
 | Variable | Default | Purpose |
@@ -193,6 +203,12 @@ python -m pytest -q
 ```
 
 GitHub Actions runs the test suite on Python 3.10, 3.11, and 3.12 for pushes and pull requests. Before changing behavior, review [`AGENTS.md`](AGENTS.md) for repository conventions and safety requirements. Keep user media, generated outputs, API keys, and local `.env` files out of commits.
+
+## Release and PyPI publishing
+
+Pushing a version tag such as `v0.2.3` runs tests, builds the distributions, checks that the tag matches `pyproject.toml`, and publishes them to PyPI through GitHub Actions. The publisher uses PyPI Trusted Publishing (OIDC), so no PyPI API token is stored in GitHub.
+
+Before the first release, configure a [pending PyPI Trusted Publisher](https://docs.pypi.org/trusted-publishers/creating-a-project-through-oidc/) with owner `gempurbayu`, repository `kairos`, workflow `publish.yml`, and environment `pypi`. The tag must match the package version exactly. Tag `v0.2.2` predates this workflow; the next version tag will be the first one eligible for automatic publishing.
 
 ## License
 

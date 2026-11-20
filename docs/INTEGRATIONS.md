@@ -25,7 +25,7 @@ If the harness cannot resolve `kairos-mcp`, run `uv tool update-shell`, reopen t
 
 ## Install directly from a harness
 
-These examples use `uvx` to fetch Kairos v0.2.2 from GitHub and create its tool environment on first launch. Install [uv](https://docs.astral.sh/uv/getting-started/installation/) first, and make sure `uvx` is on `PATH`. The first launch needs internet access and may take longer while Python dependencies are installed; later launches use uv's cache. FFmpeg must also be installed on the machine running the server.
+Until the first PyPI release, these examples use `uvx` to fetch Kairos v0.2.2 from GitHub and create its tool environment on first launch. After the package is published, you can replace the Git source with the shorter PyPI package source `kairos-video-clipper`. Install [uv](https://docs.astral.sh/uv/getting-started/installation/) first, and make sure `uvx` is on `PATH`. The first launch needs internet access and may take longer while Python dependencies are installed; later launches use uv's cache. FFmpeg must also be installed on the machine running the server.
 
 Without `GEMINI_API_KEY` in the server process environment, Kairos still works and selects highlights offline. To use Gemini with a direct `uvx` configuration, pass the key through the harness's local MCP environment settings. Do not put real keys in repository files.
 
@@ -109,6 +109,22 @@ uv tool install git+https://github.com/gempurbayu/kairos.git@v0.2.2
 
 Then use the shorter `kairos-mcp` command in each harness configuration. This avoids resolving and preparing the package on each harness's first launch.
 
+After the first PyPI release, use this shorter install command:
+
+```bash
+uv tool install kairos-video-clipper
+```
+
+For direct harness launch from PyPI, set command `uvx` with arguments `--from`, `kairos-video-clipper`, and `kairos-mcp`.
+
+For example, Codex CLI can use:
+
+```bash
+codex mcp add kairos -- uvx --from kairos-video-clipper kairos-mcp
+```
+
+In Codex config, set `command = "uvx"` and `args = ["--from", "kairos-video-clipper", "kairos-mcp"]`. Use the same command and argument list in Hermes and OpenClaw after the package's first PyPI release.
+
 ## Codex
 
 Codex CLI, its IDE extension, and the Codex desktop app share MCP configuration. With Codex CLI, add the MCP server once:
@@ -175,4 +191,17 @@ npx skills add gempurbayu/kairos --skill kairos -g
 
 This installs agent instructions; the MCP CLI install above provides the actual tools.
 
-The harness command remains `kairos-mcp` after this install. When the package is published to PyPI, this can become `uv tool install kairos-video-clipper`.
+The harness command remains `kairos-mcp` after this install.
+
+## Automatic PyPI publishing
+
+The [publish workflow](../.github/workflows/publish.yml) runs when a `v*` tag is pushed. It tests Python 3.10–3.12, verifies that the tag equals the version in `pyproject.toml`, builds the wheel and source archive, then publishes through PyPI Trusted Publishing. No PyPI token is stored in repository secrets.
+
+For the first publication, configure a [pending publisher in PyPI](https://docs.pypi.org/trusted-publishers/creating-a-project-through-oidc/) with:
+
+- Owner: `gempurbayu`
+- Repository: `kairos`
+- Workflow: `publish.yml`
+- GitHub environment: `pypi`
+
+For each release, update the project version, commit the change, create the matching tag (for example, `v0.2.3`), then push the commit and tag. Publishing starts after the release tests pass.

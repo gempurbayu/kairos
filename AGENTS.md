@@ -39,6 +39,7 @@ These instructions apply to the whole repository. Follow them for bug fixes, ref
 - Run the suite with `python -m pytest -q` after code changes.
 - GitHub Actions is the compatibility check for Python 3.10, 3.11, and 3.12.
 - For packaging changes, confirm the declared entry points and setup scripts agree. For integration changes, check every affected example in `docs/INTEGRATIONS.md`.
+- The PyPI workflow publishes only pushed `v*` tags after tests pass and only when the tag exactly matches `project.version` in `pyproject.toml`. Do not add API tokens to the workflow; publishing uses PyPI Trusted Publishing.
 
 ## Collaboration
 
