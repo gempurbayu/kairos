@@ -212,4 +212,4 @@ Version `0.2.3` was the first automatic publication. The [PyPI Trusted Publisher
 
 ## License
 
-No license file has been added yet. Until a license is selected, this repository does not grant permission to reuse or redistribute its code.
+Kairos is licensed under the [MIT License](LICENSE). Copyright (c) 2026 Gempur Bayu. Third-party dependencies, models, and source videos remain subject to their own licenses and terms.
